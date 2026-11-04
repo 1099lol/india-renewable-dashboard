@@ -1,0 +1,8 @@
+# Python packages the dashboard needs. Streamlit Community Cloud installs these automatically.
+# Streamlit is pinned to the exact version the dashboard was tested with
+# (older versions show warning boxes on the charts). The other packages were
+# tested at both the minimum versions listed and the latest releases.
+streamlit==1.66.1
+pandas>=2.2
+plotly>=5.24
+openpyxl>=3.1

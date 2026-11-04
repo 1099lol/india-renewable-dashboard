@@ -12,9 +12,10 @@ It presents the completed 2024 analysis of 34 Indian states and Union Territorie
 | `data_loader.py` | Reads the Excel workbook and checks that the expected sheets and columns exist. | Rarely. |
 | `India_Renewable_Energy_PCA_KMeans_Regression_Easy_Scroll.xlsx` | All data and results. The dashboard's single source of truth. | Yes, this is how you update numbers. |
 | `requirements.txt` | The list of Python packages the website installs. | No. |
-| `.streamlit/config.toml` | Colours and font (navy, white, green). | Optional. |
+| `.streamlit/config.toml` | Theme: sage, white and charcoal with leaf-green accents, Geist font, dark sidebar. | Optional. |
 | `.gitignore` | Tells GitHub to ignore temporary files. | No. |
-| `DEPLOYMENT_GUIDE.md` | Step-by-step instructions for publishing the website. | No. |
+| `DEPLOYMENT_GUIDE.md` | Step-by-step instructions for publishing the Streamlit version. | No. |
+| `docs/`, `build_site.py`, `site_template.html` | The always-on website version (see below). | Re-run `build_site.py` after workbook changes. |
 
 Keep all of these in the same folder and **do not rename the Excel file**.
 
@@ -24,6 +25,27 @@ Keep all of these in the same folder and **do not rename the Excel file**.
 2. **State explorer:** pick any state or UT to see its 2024 profile, cluster, PCA coordinates, regression fitted value and residual, and its 2006–2024 history.
 3. **Cluster analysis:** the four K-Means profiles, the PCA map coloured by cluster, the Cluster 4 spotlight and member lists.
 4. **Historical trends:** national, state-wise and category trends from 2006 to 2024, with the coverage limitation disclosed.
+
+## The always-on website version (GitHub Pages)
+
+The `docs/` folder holds a second, **server-free** version of the same dashboard: same four tabs, same design, same numbers, with all charts and filters running in the visitor's browser. Because nothing runs on a server, it never sleeps and loads instantly every time.
+
+| File | What it does |
+| --- | --- |
+| `docs/index.html` | The website. Generated automatically; do not edit by hand. |
+| `docs/plotly.min.js` | The charting library, stored locally so the site needs no outside code. |
+| `site_template.html` | The design and interactivity of the website version. |
+| `build_site.py` | Reads the workbook and regenerates `docs/index.html`. |
+
+**If the workbook changes**, regenerate the site (with your virtual environment active):
+
+```
+python build_site.py
+```
+
+Then upload the new `docs/index.html` to GitHub. The website updates within a minute or two.
+
+**Turning it on (one time):** in the GitHub repository go to **Settings → Pages**, set **Source** to *Deploy from a branch*, choose branch **main** and folder **/docs**, then click **Save**. The address will be `https://<your-username>.github.io/india-renewable-dashboard/`.
 
 ## Run it on your own computer (optional)
 
@@ -55,7 +77,7 @@ You only need this if you want to test changes before publishing. The online ver
 | "The workbook ... was not found next to app.py" | The Excel file is missing or renamed. Put it back with its original name. |
 | "Sheet ... is missing these expected column(s)" | A column heading in the workbook was renamed. Restore the original heading. |
 | "The capacity formulas ... have no stored values" | Open the workbook in Excel, press Save, and upload it again. |
-| The colours are Streamlit's default red | The `.streamlit` folder did not upload. See the deployment guide, step 3. |
+| Red buttons, a white sidebar or square corners | The `.streamlit` folder did not upload. See the deployment guide, step 3. |
 
 ## Data scope and limitations
 

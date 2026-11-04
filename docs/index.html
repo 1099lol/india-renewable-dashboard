@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>India Renewable Energy | State Profiles Dashboard</title>
+<meta name="description" content="Interactive dashboard: state-level renewable energy profiles, capacity and economic scale across 34 Indian states and UTs (WAS Group 3).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Charting library stored next to this file, so the site has no external code dependency -->
+<script src="plotly.min.js"></script>
+<style>
+:root{--ink:#1E211D;--ink2:#3B403A;--muted:#6D736B;--green:#6BA539;--green-dark:#4A7A22;--green-tint:#EAF3E0;
+--sage:#CFD9CB;--page:#EEF0EC;--grid:#E9ECE6;--amber:#E0902B;--card:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font-family:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:1380px;margin:0 auto;padding:20px 24px 48px}
+h2,h3{font-weight:500;letter-spacing:-.015em;margin:0}
+a{color:var(--green-dark)}
+button,select,input{font-family:inherit;font-size:.92rem;color:var(--ink)}
+/* hero */
+.hero{background:var(--sage);border-radius:26px;padding:30px 34px 28px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:34px;align-items:end}
+.hero .crumb{color:#5A6357;font-size:.85rem;margin:0 0 14px}
+.hero h1{font-size:2.35rem;line-height:1.08;font-weight:300;letter-spacing:-.03em;margin:0 0 12px}
+.hero .sub{color:#4E574B;margin:0}
+.glass{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.85);border-radius:20px;padding:18px 20px}
+.glass .g-label{color:#4E574B;font-size:.85rem}
+.glass .g-val{font-size:2.2rem;letter-spacing:-.03em;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.glass .g-val span{font-size:1rem;color:#4E574B;margin-left:4px}
+.mix-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--ink);gap:2px}
+.mix-bar span{display:block;min-width:3px}
+.legend-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.8rem;color:#4E574B}
+.legend-row i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.legend-row b{color:var(--ink);font-weight:500}
+/* tabs */
+.tabs{display:inline-flex;flex-wrap:wrap;gap:4px;background:#fff;padding:5px;border-radius:999px;margin-bottom:14px}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:9px 18px;font-weight:500;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+.tabs button:focus-visible,.seg button:focus-visible,.tog:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.panel[hidden]{display:none}
+/* cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:4px 0 14px}
+.kpi{background:#fff;border-radius:20px;padding:16px 18px 14px;position:relative}
+.kpi .label{color:var(--muted);font-size:.84rem;margin-bottom:6px;padding-right:40px}
+.kpi .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+.kpi .value{font-size:1.75rem;letter-spacing:-.025em;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .text{font-size:1.02rem;font-weight:500;line-height:1.4}
+.kpi .note{color:var(--muted);font-size:.78rem;margin-top:6px;line-height:1.4}
+.kpi .icon{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:var(--page);display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:22px;padding:18px 20px;min-width:0}
+.row{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.row.even{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.row.wide{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+@media (max-width:900px){.hero,.row,.row.even,.row.wide{grid-template-columns:1fr}.hero h1{font-size:1.8rem}}
+.cap{color:var(--muted);font-size:.82rem;margin:8px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:.8rem;font-weight:500}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:6px 0 14px}
+.ccard{background:#fff;border-radius:20px;padding:16px 18px}
+.ccard .cname{font-weight:500;margin:10px 0;line-height:1.3;min-height:2.6em}
+.ccard table{width:100%;font-size:.84rem;border-collapse:collapse}
+.ccard td{padding:4px 0;color:var(--muted);border-top:1px solid var(--grid)}
+.ccard td.v{text-align:right;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.note-box{background:#fff;border-radius:16px;padding:13px 18px;font-size:.9rem;margin:6px 0 14px}
+.note-box.amber{background:#FCEFDD;color:#4A3210}
+.note-box b{font-weight:600}
+.section-title{font-size:1.2rem;font-weight:500;margin:22px 0 2px;letter-spacing:-.01em}
+.section-sub{color:var(--muted);font-size:.88rem;margin:0 0 10px}
+.state-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:8px 0 12px}
+.state-head h2{font-size:1.9rem;font-weight:400;letter-spacing:-.025em}
+.muted{color:var(--muted);font-size:.88rem}
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;margin:6px 0 12px}
+.ctl{display:flex;flex-direction:column;gap:5px;min-width:180px}
+.ctl label,.ctl .lbl{font-size:.82rem;color:var(--muted)}
+select{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231E211D' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;border:1px solid #E3E7E0;border-radius:12px;padding:10px 38px 10px 14px;min-width:220px;cursor:pointer}
+select.full{width:100%}
+.seg{display:inline-flex;background:#fff;border-radius:999px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:999px;padding:7px 14px;color:var(--muted);cursor:pointer;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.toggles{display:flex;flex-wrap:wrap;gap:6px}
+.tog{border:1px solid #E3E7E0;background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;font-size:.84rem;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--green-tint);border-color:#CFE3BA;color:var(--green-dark);font-weight:500}
+.tog .x{margin-left:6px;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--green-dark)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--ink);cursor:pointer;user-select:none}
+.switch input{accent-color:var(--green-dark);width:16px;height:16px}
+.btn{border:1px solid #DCE2D8;background:#fff;border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--green-tint)}
+/* tables */
+.tbl-wrap{background:#fff;border-radius:18px;overflow:auto;max-height:540px}
+table.data{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+table.data th{position:sticky;top:0;background:#F7F8F5;text-align:left;font-weight:500;color:var(--muted);padding:10px 12px;white-space:nowrap}
+table.data td{padding:9px 12px;border-top:1px solid var(--grid);white-space:nowrap}
+table.data td.n,table.data th.n{text-align:right}
+.bar-cell{display:flex;align-items:center;gap:8px;min-width:150px}
+.bar-cell .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
+.bar-cell .fill{height:100%;background:var(--green-dark)}
+table.mini{border-collapse:collapse;font-size:.86rem;width:100%;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+table.mini th,table.mini td{padding:6px 8px;border-top:1px solid var(--grid);text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+table.mini th{color:var(--muted);font-weight:500}
+details.panel-box{background:#fff;border-radius:16px;padding:12px 18px;margin:10px 0}
+details.panel-box summary{cursor:pointer;font-weight:500}
+details.panel-box[open] summary{margin-bottom:10px}
+.small-multiples{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:900px){.small-multiples{grid-template-columns:repeat(2,minmax(0,1fr))}}
+footer{border-top:1px solid #DCE2D8;margin-top:28px;padding-top:14px;color:var(--muted);font-size:.8rem}
+.empty{background:#fff;border-radius:16px;padding:16px 18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hero" class="hero"></header>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button role="tab" id="tab-overview" aria-controls="p-overview" aria-selected="true" data-tab="overview">National overview</button>
+    <button role="tab" id="tab-state" aria-controls="p-state" aria-selected="false" data-tab="state">State explorer</button>
+    <button role="tab" id="tab-cluster" aria-controls="p-cluster" aria-selected="false" data-tab="cluster">Cluster analysis</button>
+    <button role="tab" id="tab-history" aria-controls="p-history" aria-selected="false" data-tab="history">Historical trends</button>
+  </nav>
+
+  <!-- ===================== TAB 1: NATIONAL OVERVIEW ===================== -->
+  <section class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+    <div id="ov-kpis"></div>
+    <div class="row">
+      <div class="card"><div id="ov-top10"></div><p class="cap" id="ov-top10-cap"></p></div>
+      <div class="card"><div id="ov-mix"></div><p class="cap">Large hydro is not part of the dataset, so totals are lower than official all-renewable figures.</p></div>
+    </div>
+    <div class="section-title">State-wise ranking</div>
+    <p class="section-sub" id="rank-sub"></p>
+    <div class="controls">
+      <div class="ctl"><label for="rank-by">Rank by</label>
+        <select id="rank-by">
+          <option value="cap">Renewable capacity (GW)</option>
+          <option value="intensity">Capacity per million people (MW)</option>
+          <option value="gsdp">GSDP (₹ lakh crore)</option>
+          <option value="pop">Population (million)</option>
+        </select></div>
+      <div class="ctl"><span class="lbl">Zone (none selected = all)</span><div class="toggles" id="rank-zones"></div></div>
+      <div class="ctl"><span class="lbl">Cluster (none selected = all)</span><div class="toggles" id="rank-clusters"></div></div>
+    </div>
+    <div id="rank-table"></div>
+    <p style="margin:10px 0"><button class="btn" id="rank-download">Download this table (CSV)</button></p>
+    <div id="ov-zero"></div>
+  </section>
+
+  <!-- ===================== TAB 2: STATE EXPLORER ===================== -->
+  <section class="panel" id="p-state" role="tabpanel" aria-labelledby="tab-state" hidden>
+    <div class="ctl" style="max-width:520px"><label for="state-pick">Select a state or Union Territory</label><select id="state-pick" class="full"></select></div>
+    <div id="st-head"></div>
+    <div id="st-kpi1"></div>
+    <div id="st-kpi2"></div>
+    <div id="st-notes"></div>
+    <div class="controls"><div class="ctl"><span class="lbl">History chart shows</span>
+      <div class="seg" id="st-view"><button aria-pressed="true" data-v="total">Total capacity</button><button aria-pressed="false" data-v="cat">By category</button></div></div></div>
+    <div class="row even">
+      <div class="card"><div id="st-hist"></div><p class="cap" id="st-hist-cap"></p></div>
+      <div class="card"><div id="st-reg"></div><p class="cap" id="st-reg-cap"></p></div>
+    </div>
+    <details class="panel-box" id="st-flags"><summary></summary><div></div></details>
+  </section>
+
+  <!-- ===================== TAB 3: CLUSTER ANALYSIS ===================== -->
+  <section class="panel" id="p-cluster" role="tabpanel" aria-labelledby="tab-cluster" hidden>
+    <div class="note-box" id="cl-intro"></div>
+    <div class="cluster-grid" id="cl-cards"></div>
+    <div class="card" style="margin-bottom:14px"><div class="small-multiples" id="cl-bars"></div><p class="cap">Values are read from the K-MEANS sheet of the workbook.</p></div>
+    <div class="row wide">
+      <div class="card">
+        <label class="switch"><input type="checkbox" id="pca-labels"> Show state names on the map</label>
+        <div id="cl-pca"></div>
+      </div>
+      <div class="card" id="cl-read"></div>
+    </div>
+    <div class="section-title" id="spot-title">Spotlight: Cluster 4, large economies with low reported renewable intensity</div>
+    <p class="section-sub">Share of the national total held by each cluster, computed from the 2024 STATES sheet.</p>
+    <div class="row">
+      <div class="card"><div id="cl-shares"></div></div>
+      <div id="cl-spot"></div>
+    </div>
+    <div class="section-title">Explore a cluster</div>
+    <p class="section-sub">Choose a cluster to see its member states and the workbook's suggested next checks.</p>
+    <div class="ctl" style="max-width:520px"><label for="cluster-pick">Cluster</label><select id="cluster-pick" class="full"></select></div>
+    <div id="cl-guide" style="margin-top:12px"></div>
+    <div id="cl-members"></div>
+    <p class="cap" id="cl-members-cap"></p>
+    <details class="panel-box" id="sil-box"><summary>Why K = 4? (silhouette scores from the workbook)</summary><div id="cl-sil"></div>
+      <p class="muted">K = 5 scores marginally higher but isolates a single state. K = 4 gives clearly separated groups with no single-state cluster, so it was selected.</p></details>
+  </section>
+
+  <!-- ===================== TAB 4: HISTORICAL TRENDS ===================== -->
+  <section class="panel" id="p-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+    <div class="note-box amber" id="hi-cov"></div>
+    <details class="panel-box"><summary>Which states/UTs are missing in which years?</summary><ul id="hi-missing" style="margin:0;padding-left:20px"></ul></details>
+    <div class="card" style="margin:14px 0">
+      <div class="seg" id="nat-view"><button aria-pressed="true" data-v="stack">Stacked by category</button><button aria-pressed="false" data-v="total">Total only</button><button aria-pressed="false" data-v="share">Category share (%)</button></div>
+      <div id="hi-nat"></div>
+    </div>
+    <div class="section-title">Inspect a single year</div>
+    <div class="controls">
+      <div class="ctl" style="flex:1;min-width:260px"><label for="year-pick">Year: <b id="year-out"></b></label><input type="range" id="year-pick" step="1"></div>
+      <div class="ctl"><label for="top-n">Show top</label><select id="top-n"><option>5</option><option selected>10</option><option>15</option></select></div>
+    </div>
+    <div id="hi-kpis"></div>
+    <div class="card" style="margin-bottom:14px"><div id="hi-top"></div></div>
+    <div class="section-title">Compare states over time</div>
+    <p class="section-sub">Add or remove states to compare. Years with no record appear as gaps.</p>
+    <div class="controls">
+      <div class="ctl"><label for="cmp-add">Add a state or UT</label><select id="cmp-add"></select></div>
+      <div class="ctl"><label for="cmp-measure">Measure</label><select id="cmp-measure"></select></div>
+      <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="cmp-log"> Log scale</label>
+    </div>
+    <div class="toggles" id="cmp-chips" style="margin-bottom:10px"></div>
+    <div class="card" style="margin-bottom:14px" id="cmp-card"><div id="hi-cmp"></div><p class="cap" id="hi-cmp-cap"></p></div>
+    <div class="section-title">Energy-category trends</div>
+    <p class="section-sub">Reported capacity per category. Narrow to a zone to see regional patterns.</p>
+    <div class="ctl" style="max-width:320px"><label for="cat-zone">Zone</label><select id="cat-zone"></select></div>
+    <div class="card" style="margin:12px 0 14px"><div id="hi-cat"></div><p class="cap" id="hi-cat-cap"></p></div>
+    <details class="panel-box" id="hi-quality"><summary>Data quality notes for the historical series</summary><div></div></details>
+  </section>
+
+  <details class="panel-box" id="about"><summary>About this dashboard, methods and limitations</summary><div></div></details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+/* All data below is generated by build_site.py from the project workbook. */
+const D = {"built": "2026-11-04", "firstYear": 2006, "lastYear": 2024, "years": [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "categories": ["Solar", "Wind", "Biomass", "Small hydro", "Waste-to-energy"], "states": [{"name": "Andaman And Nicobar Islands", "zone": "South", "gsdp": 0.0876105, "pop": 0.403767, "cap": 0.03473886578990641, "intensity": 86.03691185734945, "pc1": -1.2617248396285692, "pc2": 1.7783539109125734, "cluster": 3, "fitted": -1.5956794303163702, "resid": 1.6304182961062765, "rCap": 28, "rInt": 11, "rGsdp": 33, "rPop": 33}, {"name": "Andhra Pradesh", "zone": "South", "gsdp": 8.0277875, "pop": 53.408066, "cap": 14.30684, "intensity": 267.87788945587357, "pc1": 0.9945693686479574, "pc2": 0.7001638130409906, "cluster": 1, "fitted": 9.5555776586744, "resid": 4.751262341325599, "rCap": 6, "rInt": 4, "rGsdp": 7, "rPop": 10}, {"name": "Arunachal Pradesh", "zone": "North-East", "gsdp": 0.20826859375, "pop": 1.575754, "cap": 0.28923894165691105, "intensity": 183.55589873604066, "pc1": -0.6501048753381131, "pc2": 1.7941988285021282, "cluster": 3, "fitted": -1.426226101596645, "resid": 1.715465043253556, "rCap": 21, "rInt": 7, "rGsdp": 31, "rPop": 29}, {"name": "Assam", "zone": "North-East", "gsdp": 2.9778090625, "pop": 36.04648, "cap": 0.38458000000000003, "intensity": 10.669002909576747, "pc1": 0.15197582753150804, "pc2": -0.9872474021662154, "cluster": 4, "fitted": 2.4633418243318648, "resid": -2.0787618243318646, "rCap": 20, "rInt": 25, "rGsdp": 17, "rPop": 14}, {"name": "Bihar", "zone": "East", "gsdp": 4.7582834375, "pop": 128.592632, "cap": 0.5639700000000001, "intensity": 4.3857100615220315, "pc1": 0.39485131581267224, "pc2": -1.826980359161603, "cluster": 4, "fitted": 4.963856295984721, "resid": -4.399886295984721, "rCap": 18, "rInt": 31, "rGsdp": 15, "rPop": 2}, {"name": "Chandigarh", "zone": "North", "gsdp": 0.3580157421875, "pop": 1.243555, "cap": 0.055168743133544924, "intensity": 44.3637339189219, "pc1": -0.8110922050304588, "pc2": 0.9284104190287374, "cluster": 3, "fitted": -1.2159198388307364, "resid": 1.2710885819642814, "rCap": 25, "rInt": 18, "rGsdp": 25, "rPop": 31}, {"name": "Chhattisgarh", "zone": "Central", "gsdp": 2.8502934375, "pop": 30.524288, "cap": 2.15389, "intensity": 70.56315285716083, "pc1": 0.4139423292008386, "pc2": 0.16273539652440502, "cluster": 1, "fitted": 2.284257716101237, "resid": -0.1303677161012371, "rCap": 11, "rInt": 15, "rGsdp": 18, "rPop": 18}, {"name": "Delhi", "zone": "North", "gsdp": 6.929225625, "pop": 21.75187, "cap": 0.27011747360229493, "intensity": 12.418126515205126, "pc1": 0.2663074221879579, "pc2": -0.8873090435430309, "cluster": 4, "fitted": 8.012747329288953, "resid": -7.7426298556866575, "rCap": 22, "rInt": 24, "rGsdp": 10, "rPop": 19}, {"name": "Goa", "zone": "West", "gsdp": 0.6417752734375, "pop": 1.582567, "cap": 0.0494, "intensity": 31.215108112326362, "pc1": -0.6833737997865763, "pc2": 0.5868974791914475, "cluster": 3, "fitted": -0.8174053618335284, "resid": 0.8668053618335284, "rCap": 26, "rInt": 21, "rGsdp": 23, "rPop": 28}, {"name": "Gujarat", "zone": "West", "gsdp": 13.58385, "pop": 72.366697, "cap": 37.40606, "intensity": 516.8960523374446, "pc1": 1.2907355293523344, "pc2": 0.958128076874334, "cluster": 1, "fitted": 17.358562571983104, "resid": 20.047497428016893, "rCap": 1, "rInt": 1, "rGsdp": 3, "rPop": 8}, {"name": "Haryana", "zone": "North", "gsdp": 6.2964125, "pop": 30.573527, "cap": 2.3527199999999997, "intensity": 76.9528487831973, "pc1": 0.6126012438845388, "pc2": 0.11315851641399388, "cluster": 1, "fitted": 7.124018797650093, "resid": -4.771298797650093, "rCap": 10, "rInt": 14, "rGsdp": 12, "rPop": 17}, {"name": "Himachal Pradesh", "zone": "North", "gsdp": 1.328295625, "pop": 7.504551, "cap": 2.06425, "intensity": 275.06642302784, "pc1": 0.17292191313190466, "pc2": 1.4231645094682615, "cluster": 3, "fitted": 0.14675008924744404, "resid": 1.9174999107525559, "rCap": 12, "rInt": 3, "rGsdp": 22, "rPop": 22}, {"name": "Jammu And Kashmir", "zone": "North", "gsdp": 2.4058056, "pop": 13.701069, "cap": 0.47074, "intensity": 34.35790302201967, "pc1": 0.08850385412682933, "pc2": -0.050016683332505335, "cluster": 1, "fitted": 1.6600149380256282, "resid": -1.1892749380256282, "rCap": 19, "rInt": 20, "rGsdp": 20, "rPop": 20}, {"name": "Jharkhand", "zone": "East", "gsdp": 2.7303771875, "pop": 39.96317, "cap": 0.2278, "intensity": 5.700248503809884, "pc1": 0.059501370416552936, "pc2": -1.338945398462506, "cluster": 4, "fitted": 2.115846239518575, "resid": -1.888046239518575, "rCap": 23, "rInt": 29, "rGsdp": 19, "rPop": 12}, {"name": "Karnataka", "zone": "South", "gsdp": 12.21552625, "pop": 68.115063, "cap": 26.980220000000003, "intensity": 396.09770308808197, "pc1": 1.2085714836044823, "pc2": 0.8247463735942587, "cluster": 1, "fitted": 15.43687620186542, "resid": 11.543343798134583, "rCap": 2, "rInt": 2, "rGsdp": 4, "rPop": 9}, {"name": "Kerala", "zone": "South", "gsdp": 6.24511, "pop": 35.919969, "cap": 1.70806, "intensity": 47.551822775793596, "pc1": 0.5641901867610047, "pc2": -0.21318094129014553, "cluster": 1, "fitted": 7.051969098152469, "resid": -5.343909098152469, "rCap": 14, "rInt": 17, "rGsdp": 13, "rPop": 15}, {"name": "Lakshadweep", "zone": "South", "gsdp": 0.0059888, "pop": 0.069459, "cap": 0.0, "intensity": 0.0, "pc1": -3.005821747176669, "pc2": -0.16982973395168813, "cluster": 2, "fitted": -1.7103096911708169, "resid": 1.7103096911708169, "rCap": 32, "rInt": 32, "rGsdp": 34, "rPop": 34}, {"name": "Madhya Pradesh", "zone": "Central", "gsdp": 6.59193375, "pop": 87.610397, "cap": 10.216709999999999, "intensity": 116.61526884760035, "pc1": 0.9120994708445557, "pc2": 0.1017073607142824, "cluster": 1, "fitted": 7.539051539868549, "resid": 2.6776584601314504, "rCap": 7, "rInt": 10, "rGsdp": 11, "rPop": 5}, {"name": "Maharashtra", "zone": "West", "gsdp": 20.11148, "pop": 127.360459, "cap": 22.76277, "intensity": 178.72713539765115, "pc1": 1.3205078372648977, "pc2": 0.12635847378373272, "cluster": 1, "fitted": 26.526025754706716, "resid": -3.763255754706716, "rCap": 3, "rInt": 8, "rGsdp": 1, "rPop": 3}, {"name": "Manipur", "zone": "North-East", "gsdp": 0.23546046875, "pop": 3.252823, "cap": 0.01769873046875, "intensity": 5.441037052661642, "pc1": -1.0381695669682192, "pc2": -0.44003815765285, "cluster": 2, "fitted": -1.3880375840287495, "resid": 1.4057363144974995, "rCap": 30, "rInt": 30, "rGsdp": 30, "rPop": 25}, {"name": "Meghalaya", "zone": "North-East", "gsdp": 0.26408681640625, "pop": 3.378892, "cap": 0.0, "intensity": 0.0, "pc1": -1.3186857979683733, "pc2": -1.597755616345221, "cluster": 2, "fitted": -1.3478344799627227, "resid": 1.3478344799627227, "rCap": 32, "rInt": 32, "rGsdp": 27, "rPop": 24}, {"name": "Mizoram", "zone": "North-East", "gsdp": 0.25893203125, "pop": 1.250181, "cap": 0.04436898136138916, "intensity": 35.490046130431644, "pc1": -0.9219641178284572, "pc2": 0.8360095687420112, "cluster": 3, "fitted": -1.3550739073099791, "resid": 1.3994428886713683, "rCap": 27, "rInt": 19, "rGsdp": 28, "rPop": 30}, {"name": "Nagaland", "zone": "North-East", "gsdp": 0.20233349609375, "pop": 2.252573, "cap": 0.0, "intensity": 0.0, "pc1": -1.464933269406411, "pc2": -1.4651484667192514, "cluster": 2, "fitted": -1.434561406944764, "resid": 1.434561406944764, "rCap": 32, "rInt": 32, "rGsdp": 32, "rPop": 26}, {"name": "Odisha", "zone": "East", "gsdp": 5.0453703125, "pop": 46.566109, "cap": 0.6170872156069672, "intensity": 13.251852664068782, "pc1": 0.36145205083571713, "pc2": -0.9951507218369142, "cluster": 4, "fitted": 5.367043724929939, "resid": -4.749956509322971, "rCap": 16, "rInt": 23, "rGsdp": 14, "rPop": 11}, {"name": "Puducherry", "zone": "South", "gsdp": 0.295796484375, "pop": 1.682909, "cap": 0.013688671112060546, "intensity": 8.133934224643488, "pc1": -1.0634372582204392, "pc2": -0.09633372567534418, "cluster": 2, "fitted": -1.303301132692748, "resid": 1.3169898038048085, "rCap": 31, "rInt": 26, "rGsdp": 26, "rPop": 27}, {"name": "Punjab", "zone": "North", "gsdp": 4.3870640625, "pop": 30.926357, "cap": 1.7678162097930907, "intensity": 57.16212258020209, "pc1": 0.4816367465643101, "pc2": -0.021744816784901113, "cluster": 1, "fitted": 4.442512415736274, "resid": -2.674696205943183, "rCap": 13, "rInt": 16, "rGsdp": 16, "rPop": 16}, {"name": "Rajasthan", "zone": "West", "gsdp": 7.69105625, "pop": 81.897401, "cap": 17.04061577486992, "intensity": 208.0727296201978, "pc1": 1.031126442504654, "pc2": 0.44856485062825757, "cluster": 1, "fitted": 9.082669216123657, "resid": 7.957946558746263, "rCap": 4, "rInt": 6, "rGsdp": 8, "rPop": 6}, {"name": "Sikkim", "zone": "North-East", "gsdp": 0.24169505859375, "pop": 0.694024, "cap": 0.05678867244720459, "intensity": 81.82522859037236, "pc1": -0.9218939886918219, "pc2": 1.486846211614325, "cluster": 3, "fitted": -1.3792816691175243, "resid": 1.436070341564729, "rCap": 24, "rInt": 12, "rGsdp": 29, "rPop": 32}, {"name": "Tamil Nadu", "zone": "South", "gsdp": 14.95971, "pop": 77.089106, "cap": 16.099293054580688, "intensity": 208.8400539316241, "pc1": 1.173480197328978, "pc2": 0.3805179820688283, "cluster": 1, "fitted": 19.290832920422293, "resid": -3.191539865841605, "rCap": 5, "rInt": 5, "rGsdp": 2, "rPop": 7}, {"name": "Telangana", "zone": "South", "gsdp": 7.529945, "pop": 38.151079, "cap": 4.9591865234375, "intensity": 129.98810658638251, "pc1": 0.7880087338368131, "pc2": 0.3523867275828935, "cluster": 1, "fitted": 8.85640310534569, "resid": -3.8972165819081894, "rCap": 8, "rInt": 9, "rGsdp": 9, "rPop": 13}, {"name": "Tripura", "zone": "North-East", "gsdp": 0.52136265625, "pop": 4.18428, "cap": 0.030898741722106934, "intensity": 7.38448232960197, "pc1": -0.7567203472578945, "pc2": -0.442291442233755, "cluster": 2, "fitted": -0.9865139410271712, "resid": 1.017412682749278, "rCap": 29, "rInt": 27, "rGsdp": 24, "rPop": 23}, {"name": "Uttar Pradesh", "zone": "North", "gsdp": 11.47555, "pop": 238.078417, "cap": 4.483516460418701, "intensity": 18.83209959523001, "pc1": 0.9478529823986281, "pc2": -1.2957214336943914, "cluster": 4, "fitted": 14.397646798856229, "resid": -9.914130338437527, "rCap": 9, "rInt": 22, "rGsdp": 5, "rPop": 1}, {"name": "Uttarakhand", "zone": "North", "gsdp": 1.93652671875, "pop": 11.755469, "cap": 0.9317975244522094, "intensity": 79.26502332252414, "pc1": 0.14492639362521006, "pc2": 0.5139570040642683, "cluster": 1, "fitted": 1.0009553917141645, "resid": -0.06915786726195505, "rCap": 15, "rInt": 13, "rGsdp": 21, "rPop": 21}, {"name": "West Bengal", "zone": "East", "gsdp": 8.50812125, "pop": 99.5631, "cap": 0.586947262854519, "intensity": 5.895228883537365, "pc1": 0.5181591134396722, "pc2": -1.6886115598994036, "cluster": 4, "fitted": 10.230162763612112, "resid": -9.643215500757593, "rCap": 17, "rInt": 28, "rGsdp": 6, "rPop": 4}], "history": {"Andaman And Nicobar Islands": {"total": [5.35, 6.449999999999999, 6.449999999999999, 5.35, 5.35, 5.26, 10.35, 10.35, 10.35, 10.35, 11.809999999999999, 11.809999999999999, 16.98, 17.439999999999998, 34.71, 34.739999999999995, 34.73886578990641, 34.73886578990641, 34.73886578990641], "intensity": [14.59400036553197, 17.455218569105075, 17.32269084502503, 14.263927992492107, 14.16471846629194, 13.820973721756998, 27.051397655545536, 26.909677083874993, 26.769849131855086, 26.563049386740033, 30.154320672433688, 29.999517365935684, 43.020233190945994, 43.96313549922358, 87.05728324090866, 86.91170731219164, 86.47058507675676, 86.2524538057752, 86.03691185734945], "zone": "South", "Solar": [0.1, 0.1, 0.1, 0.1, 0.1, 0.01, 5.1, 5.1, 5.1, 5.1, 6.56, 6.56, 11.73, 12.19, 29.46, 29.49, 29.488780975341797, 29.488780975341797, 29.488780975341797], "Wind": [0.0, 1.1, 1.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.481456461595371e-05, 8.481456461595371e-05, 8.481456461595371e-05], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25, 5.25], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2009, "cap": 5.35, "change": -1.0999999999999996}, {"Year": 2011, "cap": 5.26, "change": -0.08999999999999986}, {"Year": 2022, "cap": 34.73886578990641, "change": -0.0011342100935820554}], "missing": []}, "Andhra Pradesh": {"total": [353.2145639641019, 373.77673937708073, 379.2279432351398, 394.2920227138608, 438.6050347213058, 497.2787450644965, 627.6387168959207, 1479.8200000000002, 1887.8400000000001, 2618.1400000000003, 6106.26, 6801.7, 7838.58, 8364.919999999998, 9086.140000000001, 9211.56, 9264.72, 14239.33, 14306.84], "intensity": [7.457714663726507, 7.8126498471825565, 7.850554979783097, 8.08763968103699, 8.917973593734072, 10.020288173972705, 12.555765121170277, 29.391671722781535, 37.2292650373473, 51.26785800165835, 118.73388478784639, 131.52651529647164, 150.74817332810952, 159.99542177281361, 172.84994888582747, 174.29273211704168, 174.68278090646115, 267.54232027224464, 267.87788945587357], "zone": "South", "Solar": [0.0586150952479426, 0.0586150952479426, 0.0586150952479426, 0.0586150952479426, 1.2309170002068, 12.7487832164275, 13.6866247403946, 131.84, 242.86, 572.96, 1867.23, 2195.46, 3085.68, 3610.02, 4291.34, 4386.76, 4386.76, 9360.18, 9419.33], "Wind": [71.7448765834819, 71.8034916787298, 71.8034916787298, 71.8034916787298, 112.24790739981, 143.929366381323, 262.390473877415, 746.2, 1032.0, 1431.45, 3618.85, 3966.95, 4090.45, 4092.45, 4096.65, 4096.65, 4096.65, 4096.65, 4096.65], "Biomass": [176.577974434427, 195.920955866248, 201.372159724307, 212.919333488152, 212.919333488152, 212.919333488152, 223.176975156542, 380.75, 389.75, 380.75, 378.2, 477.18, 477.18, 477.18, 483.67, 483.67, 566.04, 566.03, 574.39], "Small hydro": [104.833097850945, 105.993676736855, 105.993676736855, 109.510582451731, 112.206876833137, 127.681261978594, 128.384643121569, 221.03, 223.23, 232.98, 241.98, 162.11, 162.11, 162.11, 162.11, 162.11, 162.11, 163.31, 163.31], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 23.16, 23.16, 52.37, 82.37, 53.16, 53.16, 53.16], "flags": [], "missing": []}, "Arunachal Pradesh": {"total": [45.260000000000005, 45.260000000000005, 45.260000000000005, 209.55, 78.87, 79.26, 103.94, 103.94, 104.64, 104.88, 104.88, 110.0, 136.5, 136.72000000000003, 141.27, 142.34, 153.56894165691105, 289.08894165691106, 289.23894165691104], "intensity": [34.6592049058933, 34.24901134924154, 33.850261580401856, 154.92854655508557, 57.65435167180807, 57.28008487223275, 74.31605846044069, 73.5249906449105, 73.24186965550983, 72.64576600139362, 71.90106610743615, 74.63765116668827, 91.68981302667065, 90.92287516326483, 93.01728395061728, 92.86921777551017, 99.22057437905858, 185.11015894528066, 183.55589873604066], "zone": "North-East", "Solar": [0.02, 0.02, 0.02, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.27, 0.27, 5.39, 5.39, 5.61, 10.16, 11.23, 11.228792190551758, 11.228792190551758, 11.228792190551758], "Wind": [0.0, 0.0, 0.0, 136.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00014946635928936303, 0.00014946635928936303, 0.00014946635928936303], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 11.23, 144.75, 144.9], "Small hydro": [45.24, 45.24, 45.24, 73.42, 78.84, 79.23, 103.91, 103.91, 104.61, 104.61, 104.61, 104.61, 131.11, 131.11, 131.11, 131.11, 131.11, 133.11, 133.11], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2010, "cap": 78.87, "change": -130.68}], "missing": []}, "Assam": {"total": [2.11, 27.11, 27.11, 27.11, 27.11, 31.11, 31.11, 34.11, 34.11, 34.11, 45.89, 46.56, 56.51, 75.34, 87.67, 154.05, 308.1, 368.08000000000004, 384.58000000000004], "intensity": [0.07255060310009759, 0.9185137059117656, 0.905423187650709, 0.8928534377294502, 0.8807766611274013, 0.9969372140414905, 0.984568323598207, 1.0662533775631031, 1.0533453813893108, 1.0407153726749576, 1.383582284177068, 1.3880915991390614, 1.666099654223144, 2.196984281851796, 2.5288792559239366, 4.396086447177961, 8.708928118355946, 10.306891560456888, 10.669002909576747], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 11.78, 12.45, 22.4, 41.23, 51.56, 117.94, 154.05, 184.04, 192.29], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 117.94, 147.93, 156.18], "Small hydro": [2.11, 27.11, 27.11, 27.11, 27.11, 31.11, 31.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11, 34.11], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [], "missing": []}, "Bihar": {"total": [50.4, 50.4, 50.4, 54.6, 69.3, 79.8, 114.0, 70.7, 114.12, 119.22, 292.21999999999997, 334.35, 334.35, 343.47, 376.63, 387.34999999999997, 501.17, 700.1400000000001, 563.97], "intensity": [0.5379727247188124, 0.5259475822273129, 0.5145783518439282, 0.5457995332894182, 0.6787169182796624, 0.7665746405658312, 1.0743019960728983, 0.6538402446697941, 1.0360846061314657, 1.0629309698284877, 2.5593714487812464, 2.8833825562280295, 2.8397482781217955, 2.8737357951215388, 3.104882473236454, 3.147048482875644, 4.011942824599392, 5.523496187060701, 4.3857100615220315], "zone": "East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.1, 108.52, 142.45, 142.45, 151.57, 180.23, 190.63, 190.63, 389.6, 239.23], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 112.5, 112.5, 112.5], "Biomass": [0.0, 0.0, 0.0, 0.0, 9.5, 15.5, 43.3, 0.0, 43.42, 43.42, 113.0, 121.2, 121.2, 121.2, 124.7, 124.7, 126.02, 126.02, 140.22], "Small hydro": [50.4, 50.4, 50.4, 54.6, 59.8, 64.3, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7, 70.7], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.32, 1.32, 1.32, 1.32], "flags": [{"Year": 2013, "cap": 70.7, "change": -43.3}, {"Year": 2024, "cap": 563.97, "change": -136.17000000000007}], "missing": []}, "Chandigarh": {"total": [null, null, null, null, null, null, null, 2.0, 4.5, 6.81, 17.32, 25.2, 34.71, 40.55, 45.97, 55.17, 55.16874313354492, 55.16874313354492, 55.16874313354492], "intensity": [null, null, null, null, null, null, null, 1.8374398582966383, 4.074315514993481, 6.077703574064537, 15.23978463685406, 21.88436544458696, 29.780698743908303, 34.37815804287817, 38.51586967778044, 45.65008551633747, 45.23711539666804, 44.79614984157775, 44.3637339189219], "zone": "North", "Solar": [null, null, null, null, null, null, null, 2.0, 4.5, 6.81, 17.32, 25.2, 34.71, 40.55, 45.97, 55.17, 55.16874313354492, 55.16874313354492, 55.16874313354492], "Wind": [null, null, null, null, null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [null, null, null, null, null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [null, null, null, null, null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Waste-to-energy": [null, null, null, null, null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 55.16874313354492, "change": -0.0012568664550798303}], "missing": [2006, 2007, 2008, 2009, 2010, 2011, 2012]}, "Chhattisgarh": {"total": [131.35, 164.35000000000002, 174.15, 218.95000000000002, 250.95000000000002, 274.15, 305.9, 324.0, 324.5, 425.47999999999996, 432.86, 537.85, 537.85, 551.85, 766.5199999999999, 869.08, 1141.5800000000002, 1923.32, 2153.89], "intensity": [5.625310789320398, 6.906233767881884, 7.184644539556698, 8.873216228222931, 9.995657196636186, 10.731958311695216, 11.787987174022557, 12.293079303679011, 12.125777759343109, 15.66211241581679, 15.699674646857062, 19.23902803078273, 18.97834372852101, 19.211981174242833, 26.33248517346282, 29.467047481046873, 38.261568453494675, 63.72774364914393, 70.56315285716083], "zone": "Central", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 7.1, 7.6, 93.58, 128.86, 231.35, 231.35, 231.35, 445.21, 518.08, 518.08, 1299.82, 1530.39], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 272.09, 272.09, 272.09], "Biomass": [113.3, 146.3, 156.1, 199.9, 231.9, 249.9, 249.9, 264.9, 264.9, 279.9, 228.0, 230.5, 230.5, 244.5, 244.9, 274.59, 275.0, 275.0, 275.0], "Small hydro": [18.05, 18.05, 18.05, 19.05, 19.05, 20.25, 52.0, 52.0, 52.0, 52.0, 76.0, 76.0, 76.0, 76.0, 76.0, 76.0, 76.0, 76.0, 76.0], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.41, 0.41, 0.41, 0.41], "flags": [], "missing": []}, "Delhi": {"total": [null, null, null, 0.05, 2.14, 2.53, 2.56, 5.15, 5.47, 14.28, 40.27, 69.57, 178.89, 217.16, 246.43, 270.12, 270.1174736022949, 270.1174736022949, 270.1174736022949], "intensity": [null, null, null, 0.0031150771165375894, 0.13031454215903795, 0.15070341264601775, 0.14913255244965656, 0.2935487392081651, 0.30522974620676707, 0.7803739237069729, 2.156138247707999, 3.6508368403389917, 9.204576221598899, 10.959980979012565, 12.203797424787282, 13.131179029859045, 12.884291644588219, 12.646619954246399, 12.418126515205126], "zone": "North", "Solar": [null, null, null, 0.05, 2.14, 2.53, 2.56, 5.15, 5.47, 14.28, 40.27, 69.57, 126.89, 165.16, 194.43, 211.12, 211.11878967285156, 211.11878967285156, 211.11878967285156], "Wind": [null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Waste-to-energy": [null, null, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 52.0, 52.0, 52.0, 59.0, 58.99868392944336, 58.99868392944336, 58.99868392944336], "flags": [{"Year": 2022, "cap": 270.1174736022949, "change": -0.0025263977050826725}], "missing": [2006, 2007, 2008]}, "Goa": {"total": [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.76, 0.9600000000000001, 3.9699999999999998, 5.17, 7.949999999999999, 20.34, 20.68, 27.61, 49.4], "intensity": [0.035749038887089524, 0.03543596154772941, 0.03513449131932123, 0.03484417684116631, 0.03456459327497448, 0.03428073868135711, 0.03404721258875257, 0.03379405900442702, 0.03354461971135526, 0.0333209157387347, 0.5028007989240063, 0.6313467612897625, 2.593825258500494, 3.35811540225286, 5.1337984102660466, 13.05040768087711, 13.200873504608497, 17.534968321469762, 31.215108112326362], "zone": "West", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.71, 0.91, 3.92, 4.78, 7.56, 19.95, 19.95, 26.88, 45.47], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.34, 0.34, 1.94], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.34, 0.34, 1.94], "Small hydro": [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.34, 0.34, 0.34, 0.0, 0.0, 0.0], "flags": [], "missing": []}, "Gujarat": {"total": [643.6, 1260.4, 1574.0, 1876.73, 2197.5299999999997, 3607.2700000000004, 4078.58, 4430.2, 4717.55, 5229.57, 6671.889999999999, 7295.32, 8651.8, 10636.14, 13214.25, 16587.899999999998, 16595.399999999998, 29624.64, 37406.06], "intensity": [11.600312703768118, 22.314991651884434, 27.385362982808168, 32.101423756719605, 36.969389880827954, 59.68379190284425, 66.44511019848329, 71.08026748270618, 74.56146076768457, 81.44016108724546, 102.39602672310245, 110.39513034618876, 129.11265856212808, 156.5617905381252, 191.89545865639445, 237.69084502570942, 234.90370638115292, 414.2919234958188, 516.8960523374446], "zone": "West", "Solar": [0.0, 0.0, 0.0, 0.0, 5.0, 604.89, 857.9, 916.4, 1000.05, 1119.17, 1249.37, 1588.0, 2440.13, 2948.37, 4469.87, 7180.03, 7180.03, 19435.85, 25471.72], "Wind": [636.6, 1252.9, 1566.5, 1863.63, 2176.43, 2966.28, 3174.58, 3454.3, 3645.0, 4037.5, 5340.62, 5613.42, 6073.07, 7541.52, 8561.82, 9209.22, 9209.22, 9978.92, 11722.72], "Biomass": [0.0, 0.5, 0.5, 0.5, 0.5, 20.5, 30.5, 43.9, 55.9, 56.3, 65.3, 65.3, 77.3, 77.3, 77.3, 77.3, 109.26, 110.73, 112.48], "Small hydro": [7.0, 7.0, 7.0, 12.6, 15.6, 15.6, 15.6, 15.6, 16.6, 16.6, 16.6, 28.6, 61.3, 68.95, 82.69, 89.39, 89.39, 91.64, 91.64], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 22.57, 31.96, 7.5, 7.5, 7.5], "flags": [], "missing": []}, "Haryana": {"total": [68.7, 68.7, 68.7, 77.89999999999999, 105.89999999999999, 122.69999999999999, 123.19999999999999, 125.69999999999999, 136.6, 134.19, 251.3, 496.01, 503.67999999999995, 531.3, 762.51, 1242.1299999999999, 1404.7300000000002, 1857.6200000000001, 2352.72], "intensity": [2.9757938016597483, 2.9176471787371048, 2.862334819428129, 3.1859216779394717, 4.253664276715201, 4.839957553532809, 4.780287954923747, 4.798912765653895, 5.132547474936936, 4.963656814269646, 9.152995025330814, 17.802694986546314, 17.818967946093657, 18.529952885859675, 26.2233640747375, 42.12966288740055, 47.065121633284, 61.491142835144146, 76.9528487831973], "zone": "North", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 16.8, 7.8, 10.3, 12.8, 15.39, 81.4, 216.85, 224.52, 252.14, 472.26, 910.63, 910.63, 1362.09, 1832.92], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 151.4, 151.4, 151.4], "Biomass": [6.0, 6.0, 6.0, 7.8, 35.8, 35.8, 45.3, 45.3, 52.3, 45.3, 96.4, 205.66, 205.66, 205.66, 210.66, 240.66, 258.0, 259.43, 283.7], "Small hydro": [62.7, 62.7, 62.7, 70.1, 70.1, 70.1, 70.1, 70.1, 71.5, 73.5, 73.5, 73.5, 73.5, 73.5, 73.5, 73.5, 73.5, 73.5, 73.5], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.09, 17.34, 11.2, 11.2, 11.2], "flags": [{"Year": 2015, "cap": 134.19, "change": -2.4099999999999966}], "missing": []}, "Himachal Pradesh": {"total": [141.62, 162.62, 162.62, 330.32, 393.47, 527.66, 587.91, 638.91, 723.91, 793.51, 832.54, 861.0400000000001, 890.49, 951.64, 996.59, 1040.47, 1049.67, 2056.51, 2064.25], "intensity": [21.74060883836651, 24.68456294950624, 24.419038020240986, 49.089148997574966, 57.89562278662947, 76.86680160044239, 84.92840436269461, 91.51412760356052, 102.82124590812177, 111.77050417088176, 116.31752361900708, 119.49624610475603, 122.78425702004985, 130.36973390266547, 135.65413212267907, 140.7283133512753, 141.26522729117093, 275.3970338149488, 275.06642302784], "zone": "North", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.73, 0.73, 22.68, 32.93, 50.28, 76.16, 76.16, 1067.4, 1075.14], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.2, 9.2, 9.2], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.2, 7.2, 7.2, 9.2, 9.2, 10.2, 10.2, 10.2], "Small hydro": [141.62, 162.62, 162.62, 330.32, 393.47, 527.66, 587.91, 638.91, 723.91, 793.31, 831.81, 853.11, 860.61, 911.51, 936.11, 954.11, 954.11, 969.71, 969.71], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0], "flags": [], "missing": []}, "Jammu And Kashmir": {"total": [111.83, 109.372501076045, 111.83, 129.33, 129.33, 130.53, 130.53, 147.53, 156.53, 157.53, 159.39000000000001, 180.39000000000001, 193.86, 199.78, 228.10999999999999, 239.04999999999998, 383.22, 392.24, 470.74], "intensity": [9.6631932572116, 9.333444248563554, 9.428669664707638, 10.777809862033534, 10.657247175289758, 10.640732181501724, 10.532568051177968, 11.784448984550814, 12.378750052293162, 12.334963195955842, 12.358666027035852, 13.877215986915923, 14.797358397500892, 15.131355663582807, 17.1446412154439, 17.82883498016677, 28.37605192131832, 28.83475437713174, 34.35790302201967], "zone": "North", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.36, 1.36, 14.83, 19.3, 42.13, 54.73, 191.61, 196.12, 235.37], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 46.93, 49.44, 65.44], "Small hydro": [111.83, 109.372501076045, 111.83, 129.33, 129.33, 130.53, 130.53, 147.53, 156.53, 156.53, 158.03, 179.03, 179.03, 180.48, 185.98, 184.32, 144.68, 146.68, 169.93], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2007, "cap": 109.372501076045, "change": -2.4574989239550007}], "missing": []}, "Jharkhand": {"total": [4.05, 4.05, 4.05, 4.05, 4.05, 8.05, 20.05, 20.05, 20.05, 20.240000000000002, 27.32, 34.02, 43.300000000000004, 46.75, 78.21, 97.14, 109.78999999999999, 126.83999999999999, 227.8], "intensity": [0.1349854440696145, 0.13230815962061468, 0.1297610739782621, 0.12733529792309525, 0.12502275491313958, 0.24402714018319435, 0.5975966896541199, 0.5877500059141428, 0.5782241700413954, 0.574379001657214, 0.7631261041864897, 0.9363107759131989, 1.1744227752743919, 1.2498984708140553, 2.061564412922416, 2.52500801574374, 2.817354420799635, 3.2138895977233375, 5.700248503809884], "zone": "East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 16.0, 16.0, 16.0, 16.19, 23.27, 25.67, 34.95, 38.4, 69.86, 88.79, 97.14, 114.19, 185.55], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.3, 4.3, 19.1], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.3, 4.3, 4.3, 4.3, 4.3, 4.3, 4.3, 19.1], "Small hydro": [4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05, 4.05], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [], "missing": []}, "Karnataka": {"total": [1491.88, 1737.6799999999998, 2085.58, 2455.4300000000003, 2881.38, 3266.13, 3604.29, 3984.14, 4509.23, 5104.52, 7456.969999999999, 12552.05, 13844.99, 15232.06, 15505.130000000001, 15904.59, 15905.59, 25198.06, 26980.22], "intensity": [25.975220327892497, 29.856249019892953, 35.37997972349439, 41.147285036299124, 47.72078901524536, 53.459597716662216, 58.39546357544704, 63.900513219852314, 71.6033274460372, 80.25700757515011, 116.09955973537103, 193.84758149079252, 212.1017486143442, 231.4966344363991, 233.78462056584183, 237.93168322821583, 236.45053416810183, 372.2449353433153, 396.09770308808197], "zone": "South", "Solar": [0.0, 0.0, 0.0, 6.0, 6.0, 9.0, 14.0, 31.0, 77.22, 145.46, 1027.84, 4944.12, 6095.56, 7277.93, 7383.88, 7590.81, 7590.81, 16719.23, 17752.74], "Wind": [821.1, 1011.4, 1327.4, 1472.8, 1726.85, 1933.5, 2135.15, 2318.2, 2638.0, 2869.15, 3751.4, 4608.4, 4694.9, 4790.6, 4938.6, 5130.9, 5130.9, 5294.95, 6019.61], "Biomass": [254.28, 262.28, 294.18, 336.18, 365.18, 441.18, 491.38, 603.28, 664.28, 872.18, 1452.0, 1768.8, 1798.8, 1881.8, 1887.3, 1887.3, 1902.15, 1902.15, 1907.72], "Small hydro": [416.5, 464.0, 464.0, 640.45, 783.35, 882.45, 963.76, 1031.66, 1129.73, 1217.73, 1225.73, 1230.73, 1254.73, 1280.73, 1280.73, 1280.73, 1280.73, 1280.73, 1280.73], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 14.62, 14.85, 1.0, 1.0, 19.42], "flags": [], "missing": []}, "Kerala": {"total": [100.14, 133.64, 150.14, 161.65, 171.9, 185.60999999999999, 193.54999999999998, 193.64999999999998, 203.95, 255.47, 338.72, 380.18, 413.83000000000004, 427.47, 572.4200000000001, 670.7, 670.9300000000001, 1424.7, 1708.06], "intensity": [3.129026504673042, 4.137358955114392, 4.607125345568922, 4.918289159500437, 5.18767868671032, 5.556177365538546, 5.75338743132609, 5.716598753335715, 5.979354851798633, 7.4385567121014455, 9.795817985072079, 10.936975570396013, 11.843005526602363, 12.169974114143066, 16.212666958223906, 18.89882436745153, 18.82891570051997, 39.822851899269395, 47.551822775793596], "zone": "South", "Solar": [0.02, 0.02, 0.02, 0.03, 0.03, 0.84, 0.03, 0.03, 0.03, 13.05, 74.2, 107.94, 138.59, 142.23, 277.4, 363.18, 363.18, 1092.95, 1365.31], "Wind": [2.0, 10.5, 27.0, 27.75, 35.0, 35.1, 35.1, 35.2, 35.0, 43.5, 51.5, 52.5, 52.5, 62.5, 62.5, 62.5, 62.5, 62.5, 63.5], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.72, 0.72, 0.72, 2.27, 2.27, 2.5, 2.5, 2.5], "Small hydro": [98.12, 123.12, 123.12, 133.87, 136.87, 149.67, 158.42, 158.42, 168.92, 198.92, 213.02, 219.02, 222.02, 222.02, 230.02, 242.52, 242.52, 266.52, 276.52], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.23, 0.23, 0.23, 0.23], "flags": [], "missing": []}, "Lakshadweep": {"total": [0.75, 0.76, 0.76, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.71, 0.75, 0.75, 0.75, 3.27, 3.27, 0.0, 0.0, 0.0], "intensity": [12.186403223709865, 12.212562870595042, 12.084784302501232, 11.807862462018042, 11.69773064025579, 11.632776511097669, 11.45457877695644, 11.455803510058196, 11.282946202912504, 11.283625203105254, 10.52303952809355, 11.11704019921736, 11.117864184171125, 10.9546623042767, 47.763722941193656, 47.76651377486926, 0.0, 0.0, 0.0], "zone": "South", "Solar": [0.75, 0.76, 0.76, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.71, 0.75, 0.75, 0.75, 3.27, 3.27, 0.0, 0.0, 0.0], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2009, "cap": 0.75, "change": -0.010000000000000009}, {"Year": 2016, "cap": 0.71, "change": -0.040000000000000036}, {"Year": 2022, "cap": 0.0, "change": -3.27}], "missing": []}, "Madhya Pradesh": {"total": [109.56, 259.96, 285.06, 301.65999999999997, 363.15999999999997, 473.15999999999997, 525.48, 882.73, 1560.74, 3038.63, 3533.99, 4016.75, 4576.709999999999, 4995.01, 5291.97, 5468.879999999999, 5484.279999999999, 9023.42, 10216.71], "intensity": [1.6622747222134264, 3.86351225960686, 4.152836867168396, 4.310745935386425, 5.093761911766999, 6.514949596642749, 7.114285675990698, 11.75423279146657, 20.446251618352633, 39.17281941102457, 44.844329082271784, 50.24224159036436, 56.43996791905316, 60.74319583018679, 63.47279780587256, 64.70826074151117, 64.1077343973084, 104.22203770183489, 116.61526884760035], "zone": "Central", "Solar": [0.1, 0.1, 0.1, 0.1, 0.1, 2.1, 37.32, 347.17, 558.58, 776.37, 857.04, 1305.35, 1840.16, 2258.46, 2544.71, 2717.95, 2717.95, 5905.08, 7098.37], "Wind": [57.3, 187.7, 212.8, 229.4, 275.9, 376.4, 386.0, 423.4, 880.0, 2141.1, 2497.79, 2519.89, 2519.89, 2519.89, 2519.89, 2519.89, 2519.89, 2844.29, 2844.29], "Biomass": [1.0, 1.0, 1.0, 1.0, 1.0, 8.5, 16.0, 26.0, 36.0, 35.0, 93.0, 105.35, 105.35, 105.35, 107.35, 107.35, 131.33, 134.94, 134.94], "Small hydro": [51.16, 71.16, 71.16, 71.16, 86.16, 86.16, 86.16, 86.16, 86.16, 86.16, 86.16, 86.16, 95.91, 95.91, 99.71, 99.71, 99.71, 123.71, 123.71], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.4, 15.4, 20.31, 23.98, 15.4, 15.4, 15.4], "flags": [], "missing": []}, "Maharashtra": {"total": [1773.0300000000002, 2081.23, 2335.73, 2541.58, 2998.88, 3638.33, 4178.68, 5617.48, 6175.58, 6600.57, 7634.879999999999, 8582.69, 9331.93, 9710.4, 10335.85, 10657.08, 10692.24, 20835.8, 22762.77], "intensity": [16.84846290833265, 19.5039482368252, 21.596378785836244, 23.1957665823109, 27.02683021770636, 32.37687737821768, 36.76951477180772, 48.88363520525008, 53.15243384341996, 56.19590509750156, 64.30597613040881, 71.60038590689999, 77.11620451357622, 79.49360386918646, 83.82999976641457, 85.64213649561663, 85.25738704748167, 164.85926476856994, 178.72713539765115], "zone": "West", "Solar": [0.0, 0.0, 0.0, 0.0, 4.0, 20.0, 100.0, 249.25, 360.75, 385.76, 452.37, 1239.18, 1633.54, 1801.8, 2323.79, 2631.02, 2631.02, 12757.5, 14483.12], "Wind": [1487.7, 1755.9, 1938.9, 2077.75, 2316.75, 2733.3, 3021.85, 4100.4, 4446.0, 4654.15, 4771.33, 4783.93, 4794.13, 5000.33, 5000.33, 5012.83, 5012.83, 5012.83, 5207.98], "Biomass": [76.0, 114.0, 185.5, 218.5, 403.0, 603.7, 756.9, 940.4, 1033.4, 1220.78, 2065.0, 2186.4, 2516.1, 2516.1, 2584.4, 2584.4, 2632.15, 2640.69, 2643.19], "Small hydro": [209.33, 211.33, 211.33, 245.33, 275.13, 281.33, 299.93, 327.43, 335.43, 339.88, 346.18, 373.18, 375.57, 379.58, 379.58, 381.08, 381.08, 381.08, 382.28], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 12.59, 12.59, 47.75, 47.75, 35.16, 43.7, 46.2], "flags": [], "missing": []}, "Manipur": {"total": [5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.48, 5.51, 8.89, 10.61, 16.84, 17.7, 17.69873046875, 17.69873046875, 17.69873046875], "intensity": [2.022126141341794, 1.998174145459745, 1.974892413659153, 1.9522553564334695, 1.9302373271065176, 1.9084009560913708, 1.8879264505423892, 1.8678597206504401, 1.8482226033215783, 1.8289824246534752, 1.819507511112941, 1.811408388102959, 2.893114550088144, 3.4194810510472764, 5.373726053572602, 5.592781078326109, 5.541569281081667, 5.49172643678678, 5.441037052661642], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.03, 0.06, 3.44, 5.16, 11.39, 12.25, 12.248730659484863, 12.248730659484863, 12.248730659484863], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.45, 5.449999809265137, 5.449999809265137, 5.449999809265137], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 17.69873046875, "change": -0.0012695312499992895}], "missing": []}, "Meghalaya": {"total": [30.71, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.040000000000003, 44.85, 46.449999999999996, 46.449999999999996, 50.18, 50.48, 0.0, 0.0, 0.0], "intensity": [10.969463385710052, 10.951994053522533, 10.823968025517079, 10.6995388129822, 10.5785545460341, 10.458766741863279, 10.34730669910579, 10.234621187084127, 10.127800240482218, 10.022952982240348, 9.920489069883839, 14.188960893515407, 14.552520186334917, 14.408073235817508, 15.412196397698551, 15.353358395075245, 0.0, 0.0, 0.0], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.02, 0.12, 0.12, 3.85, 4.15, 0.0, 0.0, 0.0], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.8, 13.8, 13.8, 13.8, 13.8, 0.0, 0.0, 0.0], "Small hydro": [30.71, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 31.03, 32.53, 32.53, 32.53, 32.53, 0.0, 0.0, 0.0], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 0.0, "change": -50.48}], "missing": []}, "Mizoram": {"total": [17.47, 17.47, 17.47, 36.47, 36.74, 36.47, 36.47, 36.47, 36.47, 36.57, 41.57, 36.67, 36.97, 37.99, 43.45, 44.37, 44.36898136138916, 44.36898136138916, 44.36898136138916], "intensity": [16.877596367500725, 16.67586209529773, 16.479950494115513, 34.00593029110643, 33.86871218692874, 33.238972444554626, 32.879315691917114, 32.52767795904206, 32.18362403314551, 31.93350983939811, 35.922855300975975, 31.363593598987336, 31.298785298968166, 31.86580628710093, 36.08210609883092, 36.482966393243125, 36.15458690695514, 35.83380016717103, 35.490046130431644], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.2, 0.5, 1.52, 6.98, 7.9, 7.8987627029418945, 7.8987627029418945, 7.8987627029418945], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [17.47, 17.47, 17.47, 36.47, 36.74, 36.47, 36.47, 36.47, 36.47, 36.47, 41.47, 36.47, 36.47, 36.47, 36.47, 36.47, 36.470218658447266, 36.470218658447266, 36.470218658447266], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2011, "cap": 36.47, "change": -0.2700000000000031}, {"Year": 2017, "cap": 36.67, "change": -4.899999999999999}, {"Year": 2022, "cap": 44.36898136138916, "change": -0.0010186386108372858}], "missing": []}, "Nagaland": {"total": [20.67, 28.67, 28.67, 28.67, 28.67, 28.67, 28.67, 29.67, 29.67, 30.67, 31.17, 31.67, 31.67, 31.67, 33.58, 33.71, 0.0, 0.0, 0.0], "intensity": [11.070739184739413, 15.173551129627748, 14.996738588590867, 14.824850109751463, 14.657689023860286, 14.490761192053382, 14.338541619780086, 14.67724166793223, 14.52615932655805, 14.85574619972381, 14.945941436076252, 15.027148035201582, 14.87886899923985, 14.733432796798189, 15.47081875553434, 15.381947771648116, 0.0, 0.0, 0.0], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 2.91, 3.04, 0.0, 0.0, 0.0], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [20.67, 28.67, 28.67, 28.67, 28.67, 28.67, 28.67, 29.67, 29.67, 30.67, 30.67, 30.67, 30.67, 30.67, 30.67, 30.67, 0.0, 0.0, 0.0], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 0.0, "change": -33.71}], "missing": []}, "Odisha": {"total": [10.5, 35.5, 35.5, 64.3, 64.3, 97.3, 97.3, 115.13, 116.39, 151.55, 194.45, 203.42, 518.58, 521.6899999999999, 573.38, 617.09, 617.0872156069672, 617.0872156069672, 617.0872156069672], "intensity": [0.2644889769432868, 0.8836960420175313, 0.8736425870589759, 1.565008379244708, 1.5483934478828223, 2.31808964255153, 2.296276280032426, 2.69176587346353, 2.6960783745976094, 3.4784631715904193, 4.42272186836151, 4.5906070790130995, 11.612233621803002, 11.592053658216287, 12.64337467365659, 13.504174522892912, 13.4186581882946, 13.334891565096141, 13.251852664068782], "zone": "East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 13.0, 30.5, 31.76, 66.92, 79.42, 79.57, 394.73, 397.84, 425.53, 451.24, 451.23870849609375, 451.23870849609375, 451.23870849609375], "Wind": [3.2, 3.2, 3.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00011080960393883288, 0.00011080960393883288, 0.00011080960393883288], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 20.0, 20.0, 20.0, 20.0, 50.4, 59.22, 59.22, 59.22, 59.22, 59.22, 59.21965789794922, 59.21965789794922, 59.21965789794922], "Small hydro": [7.3, 32.3, 32.3, 64.3, 64.3, 64.3, 64.3, 64.63, 64.63, 64.63, 64.63, 64.63, 64.63, 64.63, 88.63, 106.63, 106.62873840332031, 106.62873840332031, 106.62873840332031], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 617.0872156069672, "change": -0.0027843930328117494}], "missing": []}, "Puducherry": {"total": [0.02, 0.02, 0.02, 0.03, 0.79, 0.03, 0.03, 0.03, 0.03, 0.03, 0.08, 0.16, 3.14, 5.51, 9.51, 13.69, 13.688671112060547, 13.688671112060547, 13.688671112060547], "intensity": [0.018000455411521912, 0.0175836387757919, 0.017176331358914044, 0.02516778523489933, 0.6474130929873689, 0.024039366867181694, 0.02345668683681105, 0.022901724881579, 0.02238899536100016, 0.021882779784104495, 0.05706382374696759, 0.11142557885588215, 2.136151783788785, 3.663741657673544, 6.187692023407824, 8.714621913359215, 8.513305188433808, 8.316769737422502, 8.133934224643488], "zone": "South", "Solar": [0.02, 0.02, 0.02, 0.03, 0.79, 0.03, 0.03, 0.03, 0.03, 0.03, 0.08, 0.16, 3.14, 5.51, 9.51, 13.69, 13.688671112060547, 13.688671112060547, 13.688671112060547], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2011, "cap": 0.03, "change": -0.76}, {"Year": 2022, "cap": 13.688671112060547, "change": -0.0013288879394526276}], "missing": []}, "Punjab": {"total": [152.22, 152.231681187488, 152.22, 196.38000000000002, 231.33, 254.33, 288.33, 313.55, 483.16999999999996, 731.46, 1143.85, 1396.27, 1405.52, 1448.5, 1647.5, 1767.82, 1767.8162097930908, 1767.8162097930908, 1767.8162097930908], "intensity": [5.8260121299088174, 5.752295260150017, 5.681301598064819, 7.242863945983682, 8.434760049799833, 9.167245844750187, 10.288922345917115, 11.078598264587313, 16.905074979292444, 25.343927940171618, 39.253201871854564, 47.52400178731934, 47.452809603569236, 48.51079560283547, 54.735433995678044, 58.268226462875866, 57.89397325246627, 57.52672089057924, 57.16212258020209], "zone": "North", "Solar": [0.32, 0.32, 0.32, 1.33, 2.33, 9.33, 9.33, 16.85, 185.27, 405.06, 793.95, 905.62, 905.62, 947.1, 982.3, 1100.07, 1100.06884765625, 1100.06884765625, 1100.06884765625], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [28.0, 28.0, 28.0, 62.5, 74.5, 90.5, 124.5, 140.5, 140.5, 155.5, 179.0, 317.1, 317.1, 317.1, 473.45, 473.45, 473.4493103027344, 473.4493103027344, 473.4493103027344], "Small hydro": [123.9, 123.911681187488, 123.9, 132.55, 154.5, 154.5, 154.5, 156.2, 157.4, 170.9, 170.9, 173.55, 173.55, 173.55, 173.55, 176.1, 176.09873962402344, 176.09873962402344, 176.09873962402344], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.25, 10.75, 18.2, 18.2, 18.199312210083008, 18.199312210083008, 18.199312210083008], "flags": [{"Year": 2008, "cap": 152.22, "change": -0.011681187487994293}, {"Year": 2022, "cap": 1767.8162097930908, "change": -0.003790206909116023}], "missing": []}, "Rajasthan": {"total": [517.1, 586.0999999999999, 793.6999999999999, 1143.6, 1627.3, 2375.4500000000003, 3352.7, 3640.15, 4386.25, 5396.03, 6237.8, 6775.64, 7671.66, 9582.779999999999, 10401.35, 17040.620000000003, 17040.61577486992, 17040.61577486992, 17040.61577486992], "intensity": [8.318604716296568, 9.232308865766827, 12.252443561303858, 17.31471273958908, 24.183218950358537, 34.653598301592204, 48.11061616056935, 51.39618259853728, 60.95111051846428, 73.81481978299493, 84.02142278233511, 90.04356913027098, 100.60342172751494, 124.02555743571898, 132.88469956676013, 214.93838568830847, 212.5997368932528, 210.3119553468305, 208.0727296201978], "zone": "West", "Solar": [0.15, 0.15, 0.15, 0.15, 5.15, 197.65, 552.9, 730.1, 942.1, 1269.93, 1812.93, 2332.77, 3226.79, 5137.91, 5925.6, 12564.87, 12564.8671875, 12564.8671875, 12564.8671875], "Wind": [469.8, 538.8, 738.4, 1088.3, 1525.0, 2070.65, 2684.65, 2784.9, 3309.0, 3993.95, 4281.72, 4297.72, 4299.72, 4299.72, 4326.82, 4326.82, 4326.81884765625, 4326.81884765625, 4326.81884765625], "Biomass": [23.3, 23.3, 31.3, 31.3, 73.3, 83.3, 91.3, 101.3, 111.3, 108.3, 119.3, 121.3, 121.3, 121.3, 121.25, 121.25, 121.25050354003906, 121.25050354003906, 121.25050354003906], "Small hydro": [23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.85, 23.850000381469727, 23.850000381469727, 23.850000381469727], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.83, 3.83, 3.829235792160034, 3.829235792160034, 3.829235792160034], "flags": [{"Year": 2022, "cap": 17040.61577486992, "change": -0.0042251300837961026}], "missing": []}, "Sikkim": {"total": [39.11, 39.11, 39.11, 47.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.12, 52.18, 54.05, 56.79, 56.78867244720459, 56.78867244720459, 56.78867244720459], "intensity": [67.9113315205123, 67.10361511933154, 66.31949684681399, 78.96783623770476, 86.36334256464822, 85.3455010588345, 84.51951523330047, 83.57470722389553, 82.65196875371743, 81.8793760134753, 80.99286591336514, 80.25034534906821, 79.41405470305817, 78.67248845091488, 80.76627092937247, 83.9896177651574, 83.25332155709573, 82.53315783865995, 81.82522859037236], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.07, 1.94, 4.68, 4.678801536560059, 4.678801536560059, 4.678801536560059], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [39.11, 39.11, 39.11, 47.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.11, 52.10987091064453, 52.10987091064453, 52.10987091064453], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 56.78867244720459, "change": -0.0013275527954093036}], "missing": []}, "Tamil Nadu": {"total": [3798.04, 4253.65, 4727.95, 5392.52, 6493.92, 7658.38, 7841.04, 8062.21, 8382.93, 9440.63, 10554.34, 11183.26, 12671.13, 14347.22, 15298.470000000001, 16099.3, 16099.293054580688, 16099.293054580688, 16099.293054580688], "intensity": [55.06866009443581, 61.06995760227544, 67.24647834447774, 76.01926942123013, 90.77651063570914, 106.1496225139136, 107.93618761446481, 110.22684166966482, 113.83651402877346, 127.34020400292846, 141.41250327627236, 149.13180914468649, 168.18130935112728, 189.5397136880531, 201.16579743173952, 210.71787003712643, 210.08809086305286, 209.4623073926513, 208.8400539316241], "zone": "South", "Solar": [0.05, 0.05, 0.05, 0.05, 5.05, 15.05, 17.11, 98.36, 142.58, 1061.82, 1691.83, 1908.57, 2575.22, 3915.88, 4527.47, 5067.18, 5067.1787109375, 5067.1787109375, 5067.1787109375], "Wind": [3492.79, 3873.4, 4304.5, 4906.72, 5904.12, 6987.58, 7162.18, 7269.5, 7455.0, 7613.86, 7861.46, 8197.09, 8968.91, 9304.34, 9608.04, 9866.37, 9866.3662109375, 9866.3662109375, 9866.3662109375], "Biomass": [215.5, 290.5, 333.7, 395.7, 488.2, 532.7, 538.7, 571.3, 662.3, 641.9, 878.0, 954.55, 997.55, 997.55, 1012.65, 1012.65, 1012.6494750976562, 1012.6494750976562, 1012.6494750976562], "Small hydro": [89.7, 89.7, 89.7, 90.05, 96.55, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.05, 123.04986572265625, 123.04986572265625, 123.04986572265625], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.4, 6.4, 27.26, 30.05, 30.048791885375977, 30.048791885375977, 30.048791885375977], "flags": [{"Year": 2022, "cap": 16099.293054580688, "change": -0.006945419310795842}], "missing": []}, "Telangana": {"total": [249.38543603589773, 263.90326062291956, 267.7520567648606, 278.38797728613895, 309.6749652786942, 351.1012549355039, 443.1412831040795, null, 61.25, 605.5400000000001, 1545.8799999999999, 3642.02, 3988.66, 4024.8199999999997, 4390.990000000001, 4959.1900000000005, 4959.1865234375, 4959.1865234375, 4959.1865234375], "intensity": [7.506558871199785, 7.85801895337065, 7.890057868668796, 8.121801750339587, 8.948149826349216, 10.044784672185544, 12.575104721881665, null, 1.7103128738866107, 16.77451231500293, 42.48612951052344, 99.42151301568417, 108.15334800157659, 108.40648696798786, 117.48623513579018, 131.81978090153675, 131.2044179603732, 130.5916694927767, 129.98810658638251], "zone": "South", "Solar": [0.0413849047520573, 0.0413849047520573, 0.0413849047520573, 0.0413849047520573, 0.869082999793204, 9.00121678357247, 9.66337525960539, null, 61.25, 527.84, 1286.98, 3291.25, 3592.09, 3620.75, 3961.54, 4520.48, 4520.478515625, 4520.478515625, 4520.478515625], "Wind": [50.6551234165182, 50.6965083212702, 50.6965083212702, 50.6965083212702, 79.2520926001897, 101.620633618677, 185.259526122585, null, 0.0, 77.7, 100.8, 100.8, 128.1, 128.1, 128.1, 128.1, 128.09979248046875, 128.09979248046875, 128.09979248046875], "Biomass": [124.672025565573, 138.329044133752, 142.177840275693, 150.330666511848, 150.330666511848, 150.330666511848, 157.573024843458, null, 0.0, 0.0, 158.1, 159.1, 159.1, 159.1, 160.1, 160.1, 160.09957885742188, 160.09957885742188, 160.09957885742188], "Small hydro": [74.0169021490545, 74.8363232631453, 74.8363232631453, 77.3194175482687, 79.2231231668633, 90.1487380214064, 90.6453568784311, null, 0.0, 0.0, 0.0, 90.87, 90.87, 90.87, 90.87, 90.87, 90.86991119384766, 90.86991119384766, 90.86991119384766], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, 0.0, 0.0, 0.0, 0.0, 18.5, 26.0, 50.38, 59.64, 59.63872528076172, 59.63872528076172, 59.63872528076172], "flags": [{"Year": 2022, "cap": 4959.1865234375, "change": -0.003476562500509317}], "missing": [2013]}, "Tripura": {"total": [16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 21.01, 21.01, 21.1, 21.1, 21.1, 25.42, 29.57, 30.900000000000002, 30.898741722106934, 30.898741722106934, 30.898741722106934], "intensity": [4.617923774548404, 4.5630761916868225, 4.509779122229662, 4.45796964403906, 4.407589422996716, 4.357746786331864, 4.310792814304186, 4.264814904102934, 5.537694010381661, 5.479890809067668, 5.446476878027828, 5.390805279003555, 5.337571010564091, 6.367507376364023, 7.33349833911267, 7.589884869552231, 7.519345270055735, 7.45038461997318, 7.38448232960197], "zone": "North-East", "Solar": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0, 5.09, 5.09, 5.09, 9.41, 13.56, 14.89, 14.888741493225098, 14.888741493225098, 14.888741493225098], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Small hydro": [16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.01, 16.010000228881836, 16.010000228881836, 16.010000228881836], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "flags": [{"Year": 2022, "cap": 30.898741722106934, "change": -0.0012582778930685379}], "missing": []}, "Uttar Pradesh": {"total": [146.98, 225.98, 397.98, 592.48, 617.98, 681.98, 818.98, 822.6800000000001, 984.86, 1038.6, 2294.83, 2835.02, 3100.71, 3235.71, 4061.4700000000003, 4483.5199999999995, 4483.516460418701, 4483.516460418701, 4483.516460418701], "intensity": [0.8113097394621017, 1.221438985928253, 2.1081749832487016, 3.0783270412715864, 3.1517107363782566, 3.4131024970074297, 4.033048304102893, 3.987357399676095, 4.699269847714713, 4.87989899501802, 10.619924430979204, 12.942247870081674, 13.966196104020842, 14.382251578552465, 17.817895159985174, 19.416954273560325, 19.218052609875052, 19.023146697023403, 18.83209959523001], "zone": "North", "Solar": [0.38, 0.38, 0.38, 0.38, 0.38, 12.38, 17.38, 21.08, 71.26, 143.5, 336.73, 694.41, 960.1, 1095.1, 1836.27, 2244.43, 2244.4287109375, 2244.4287109375, 2244.4287109375], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [121.5, 200.5, 372.5, 567.0, 592.5, 644.5, 776.5, 776.5, 888.5, 870.0, 1933.0, 2115.51, 2115.51, 2115.51, 2117.26, 2117.26, 2117.259521484375, 2117.259521484375, 2117.259521484375], "Small hydro": [25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 25.1, 49.1, 49.1, 49.099361419677734, 49.099361419677734, 49.099361419677734], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 58.84, 72.73, 72.72886657714844, 72.72886657714844, 72.72886657714844], "flags": [{"Year": 2022, "cap": 4483.516460418701, "change": -0.0035395812983551878}], "missing": []}, "Uttarakhand": {"total": [75.72, 105.17, 105.17, 132.97, 144.67000000000002, 185.87, 189.87, 209.87, 244.32, 326.48, 515.81, 604.9, 651.5699999999999, 660.72, 733.89, 931.8, 931.7975244522095, 931.7975244522095, 931.7975244522095], "intensity": [8.07586018523071, 11.047097166976815, 10.883970479054074, 13.562625374216568, 14.548332452576128, 18.427981264076035, 18.578363325154235, 20.268922739641358, 23.29682048747109, 30.73856347116038, 47.958729886291295, 55.575906131201215, 59.16227053021223, 59.30365595478374, 65.11664636272569, 81.7402838014232, 80.89683771808232, 80.06897090151212, 79.26502332252414], "zone": "North", "Solar": [0.05, 0.05, 0.05, 0.05, 0.05, 5.05, 5.05, 5.05, 5.0, 41.15, 233.49, 260.08, 306.75, 315.9, 380.13, 573.54, 573.5387573242188, 573.5387573242188, 573.5387573242188], "Wind": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Biomass": [0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 10.0, 30.0, 30.0, 76.0, 73.0, 130.5, 130.5, 130.5, 130.22, 130.22, 130.22056579589844, 130.22056579589844, 130.22056579589844], "Small hydro": [75.67, 105.12, 105.12, 132.92, 134.62, 170.82, 174.82, 174.82, 209.32, 209.33, 209.32, 214.32, 214.32, 214.32, 214.32, 218.82, 218.81895446777344, 218.81895446777344, 218.81895446777344], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.22, 9.22, 9.219246864318848, 9.219246864318848, 9.219246864318848], "flags": [{"Year": 2022, "cap": 931.7975244522095, "change": -0.002475547790481869}], "missing": []}, "West Bengal": {"total": [99.55, 98.45, 98.45, 119.85000000000001, 119.85000000000001, 120.75, 126.45, 131.45000000000002, 131.71, 132.27, 424.64, 455.74, 494.37, 532.88, 582.24, 586.95, 586.9472628545191, 586.9472628545191, 586.9472628545191], "intensity": [1.1475227991339783, 1.1224937462447198, 1.110767557305931, 1.3386604685365253, 1.3257936952176737, 1.3229090655315467, 1.3739060782159025, 1.4165339611242307, 1.4077903318248712, 1.4023837979982077, 4.466180520084324, 4.762764549159356, 5.133800419829959, 5.498935128240465, 5.970704049005715, 5.981656294793633, 5.952562242439373, 5.923733554001157, 5.895228883537365], "zone": "East", "Solar": [0.05, 0.05, 0.05, 1.15, 1.15, 2.05, 2.05, 7.05, 7.21, 7.77, 26.14, 37.32, 75.95, 114.46, 162.65, 166.0, 165.99874877929688, 165.99874877929688, 165.99874877929688], "Wind": [1.1, 0.0, 0.0, 4.3, 4.3, 4.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00018748754519037902, 0.00018748754519037902, 0.00018748754519037902], "Biomass": [0.0, 0.0, 0.0, 16.0, 16.0, 16.0, 26.0, 26.0, 26.0, 26.0, 300.0, 319.92, 319.92, 319.92, 319.92, 319.92, 319.9197082519531, 319.9197082519531, 319.9197082519531], "Small hydro": [98.4, 98.4, 98.4, 98.4, 98.4, 98.4, 98.4, 98.4, 98.5, 98.5, 98.5, 98.5, 98.5, 98.5, 98.5, 98.5, 98.49974822998047, 98.49974822998047, 98.49974822998047], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.17, 2.53, 2.528870105743408, 2.528870105743408, 2.528870105743408], "flags": [{"Year": 2007, "cap": 98.45, "change": -1.0999999999999943}, {"Year": 2022, "cap": 586.9472628545191, "change": -0.0027371454809781426}], "missing": []}}, "national": {"years": [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024], "total": [10.21183, 12.344554182263533, 14.177600000000002, 16.87461, 19.89855, 24.82456, 27.96615, 31.537069999999996, 35.65712, 42.66773, 57.054129999999994, 69.62554000000002, 78.29222, 87.04807, 95.70807000000002, 109.78988999999999, 110.69539784730777, 155.09712784730775, 168.94697784730775], "count": [32, 32, 32, 33, 33, 33, 33, 33, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34], "Solar": [0.00211, 0.00212, 0.00212, 0.010299999999999998, 0.03515000000000001, 0.94124, 1.6856900000000001, 2.63114, 3.7432, 6.70056, 12.21709, 21.63541, 28.160780000000003, 34.6025, 41.145, 53.90535, 54.076207000732424, 96.95913700073241, 107.97515700073242], "Wind": [7.093990000000001, 8.7574, 10.242300000000002, 11.92925, 14.155850000000001, 17.35266, 19.047159999999998, 21.132099999999998, 23.44, 26.86236, 32.27547, 34.1407, 35.62167, 37.739450000000005, 39.24275, 40.35328, 40.90510538365229, 42.16325538365229, 44.84426538365229], "Biomass": [1.14013, 1.40663, 1.75233, 2.19963, 2.6646300000000003, 3.1353299999999997, 3.60103, 3.97013, 4.41855, 4.83133, 8.1817, 9.363610000000001, 9.77831, 9.875309999999999, 10.14592, 10.20561, 10.587458321228027, 10.768518321228028, 10.865968321228028], "Small hydro": [1.9755999999999994, 2.1784041822635336, 2.1808500000000004, 2.73543, 3.04292, 3.3953300000000004, 3.63227, 3.8037, 4.05537, 4.273479999999999, 4.3798699999999995, 4.4858199999999995, 4.59316, 4.6831700000000005, 4.78681, 4.8488999999999995, 4.746055409049988, 4.817105409049987, 4.851555409049988], "Waste-to-energy": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1383, 0.14764, 0.38759, 0.47675, 0.3805717326450348, 0.38911173264503474, 0.41003173264503484]}, "latestMix": {"Solar": 107.97515700073244, "Wind": 44.84426538365229, "Biomass": 10.86596832122803, "Small hydro": 4.851555409049988, "Waste-to-energy": 0.41003173264503484}, "clusters": [{"id": 1, "c1": 0.7874928441105287, "c2": 0.31410586670590673, "n": 14, "gsdp": 8.202321504910714, "cap": 11.368337077652386, "intensity": 170.64055804326813, "pop": 54.24278192857143, "profile": "Higher scale & higher renewable intensity"}, {"id": 2, "c1": -1.4412946644996676, "c2": -0.7018995237630182, "n": 6, "gsdp": 0.2541714536458333, "cap": 0.010381023883819581, "intensity": 3.49324226781785, "pop": 2.470156, "profile": "Small scale & low reported intensity"}, {"id": 3, "c1": -0.7253188447388703, "c2": 1.261982989637069, "n": 7, "gsdp": 0.44637040345982143, "cap": 0.37056488634127943, "intensity": 105.36476433904036, "pop": 2.036342714285714, "profile": "Small scale & relatively higher intensity"}, {"id": 4, "c1": 0.3857285832318155, "c2": -1.2885665598234377, "n": 7, "gsdp": 6.060676696428572, "cap": 1.0191454874974977, "intensity": 10.164609876135705, "pop": 87.22311114285715, "profile": "Higher scale & low renewable intensity"}], "shares": {"1": {"GSDP": 70.92503766089868, "Population": 54.280155366402774, "Capacity": 94.20512939330428}, "2": {"GSDP": 0.941917301515359, "Population": 1.0593676906369374, "Capacity": 0.03686727285480711}, "3": {"GSDP": 1.9298705651286825, "Population": 1.01887288023155, "Capacity": 1.5353658511330934}, "4": {"GSDP": 26.20317447245727, "Population": 43.64160406272873, "Capacity": 4.222637482707812}}, "guidance": {"1": {"check": "Review grid expansion and energy storage viability", "direction": "Prioritize bankable upgrades and renewable integration"}, "2": {"check": "Confirm zeros / missing categories with official data", "direction": "Start with verified local resource surveys and pilot projects"}, "3": {"check": "Assess land, grid connection and local demand", "direction": "Consider distributed or smaller-scale renewable systems"}, "4": {"check": "Check permitting, land access and grid bottlenecks", "direction": "Investigate why economic scale has not translated into similar reported capacity"}}, "silhouette": [{"k": 2, "score": 0.3887904341065703, "smallest": 13}, {"k": 3, "score": 0.4506619724967359, "smallest": 8}, {"k": 4, "score": 0.5209007524050635, "smallest": 6}, {"k": 5, "score": 0.5296994867156793, "smallest": 1}], "pca": {"PC1": {"eig": 2.2526925104684947, "var": 75.08975034894983, "cum": 75.08975034894983, "lG": 0.6519157797847709, "lP": 0.6205496340527368, "lI": 0.43580267064880207}, "PC2": {"eig": 0.7235672178166728, "var": 24.118907260555762, "cum": 99.20865760950561, "lG": -0.2034528860347029, "lP": -0.4105046413124078, "lI": 0.8888716795044839}, "PC3": {"eig": 0.023740271714832006, "var": 0.7913423904944002, "cum": 100.0, "lG": -0.7304880144340251, "lP": 0.6681347851578946, "lI": 0.1413618393706379}}, "regression": {"n": 34, "slope": 1.4044091320622663, "intercept": -1.7187204165809113, "r": 0.78327066908951, "r2": 0.6135129410559284, "adj_r2": 0.6014352204639262, "rmse": 5.572836963649791}, "coverage": {"gaps": ["32 in 2006–2008", "33 in 2009–2013"], "missingByYear": ["2006: Chandigarh, Delhi", "2007: Chandigarh, Delhi", "2008: Chandigarh, Delhi", "2009: Chandigarh", "2010: Chandigarh", "2011: Chandigarh", "2012: Chandigarh", "2013: Telangana"], "fullFrom": 2014, "nAll": 34}, "quality": {"dropped": ["Lakshadweep (from 3.27 MW in 2021 to 0 in 2022)", "Meghalaya (from 50.48 MW in 2021 to 0 in 2022)", "Nagaland (from 33.71 MW in 2021 to 0 in 2022)"], "flagged": [{"name": "Bihar", "year": 2024, "cap": 563.97, "change": -136.17000000000007}, {"name": "Arunachal Pradesh", "year": 2010, "cap": 78.87, "change": -130.68}, {"name": "Meghalaya", "year": 2022, "cap": 0.0, "change": -50.48}, {"name": "Bihar", "year": 2013, "cap": 70.7, "change": -43.3}, {"name": "Nagaland", "year": 2022, "cap": 0.0, "change": -33.71}, {"name": "Mizoram", "year": 2017, "cap": 36.67, "change": -4.899999999999999}, {"name": "Lakshadweep", "year": 2022, "cap": 0.0, "change": -3.27}, {"name": "Jammu And Kashmir", "year": 2007, "cap": 109.372501076045, "change": -2.4574989239550007}, {"name": "Haryana", "year": 2015, "cap": 134.19, "change": -2.4099999999999966}, {"name": "Andaman And Nicobar Islands", "year": 2009, "cap": 5.35, "change": -1.0999999999999996}, {"name": "West Bengal", "year": 2007, "cap": 98.45, "change": -1.0999999999999943}, {"name": "Puducherry", "year": 2011, "cap": 0.03, "change": -0.76}, {"name": "Mizoram", "year": 2011, "cap": 36.47, "change": -0.2700000000000031}, {"name": "Andaman And Nicobar Islands", "year": 2011, "cap": 5.26, "change": -0.08999999999999986}, {"name": "Lakshadweep", "year": 2016, "cap": 0.71, "change": -0.040000000000000036}, {"name": "Punjab", "year": 2008, "cap": 152.22, "change": -0.011681187487994293}, {"name": "Lakshadweep", "year": 2009, "cap": 0.75, "change": -0.010000000000000009}, {"name": "Tamil Nadu", "year": 2022, "cap": 16099.293054580688, "change": -0.006945419310795842}, {"name": "Rajasthan", "year": 2022, "cap": 17040.61577486992, "change": -0.0042251300837961026}, {"name": "Punjab", "year": 2022, "cap": 1767.8162097930908, "change": -0.003790206909116023}, {"name": "Uttar Pradesh", "year": 2022, "cap": 4483.516460418701, "change": -0.0035395812983551878}, {"name": "Telangana", "year": 2022, "cap": 4959.1865234375, "change": -0.003476562500509317}, {"name": "Odisha", "year": 2022, "cap": 617.0872156069672, "change": -0.0027843930328117494}, {"name": "West Bengal", "year": 2022, "cap": 586.9472628545191, "change": -0.0027371454809781426}, {"name": "Delhi", "year": 2022, "cap": 270.1174736022949, "change": -0.0025263977050826725}, {"name": "Uttarakhand", "year": 2022, "cap": 931.7975244522095, "change": -0.002475547790481869}, {"name": "Puducherry", "year": 2022, "cap": 13.688671112060547, "change": -0.0013288879394526276}, {"name": "Sikkim", "year": 2022, "cap": 56.78867244720459, "change": -0.0013275527954093036}, {"name": "Manipur", "year": 2022, "cap": 17.69873046875, "change": -0.0012695312499992895}, {"name": "Tripura", "year": 2022, "cap": 30.898741722106934, "change": -0.0012582778930685379}, {"name": "Chandigarh", "year": 2022, "cap": 55.16874313354492, "change": -0.0012568664550798303}, {"name": "Andaman And Nicobar Islands", "year": 2022, "cap": 34.73886578990641, "change": -0.0011342100935820554}, {"name": "Mizoram", "year": 2022, "cap": 44.36898136138916, "change": -0.0010186386108372858}]}, "limitations": ["Figures are from the supplied Kaggle CSV; unusual zero capacities may reflect incomplete coverage. Verify official records before investment decisions.", "PCA and K-Means describe the 2024 pattern; they do not tell us the best technology, project cost or future energy production.", "Regression is one 2024 comparison, not a forecast. Correlation is not proof of causation.", "Only five supplied renewable categories are included: biomass, small hydro, solar, wind and waste-to-energy. Large hydro is not included.", "The 2006–2024 raw panel is kept for audit, but all three main analyses use the complete 2024 cross-section (34 states/UTs)."]};
+
+/* ---------------- constants and helpers ---------------- */
+const INK = "#1E211D", INK2 = "#3B403A", MUTED = "#6D736B", GREEN = "#6BA539", GREEN_DARK = "#4A7A22",
+      GREEN_TINT = "#EAF3E0", GRID = "#E9ECE6", AMBER = "#E0902B";
+const CAT_COLORS = {"Solar": "#9BC53D", "Wind": "#2E332D", "Biomass": "#4E7F2E", "Small hydro": "#7FA7B3", "Waste-to-energy": "#BFB197"};
+const CL_COLORS = {1: GREEN, 2: "#AEB4AB", 3: "#2E332D", 4: AMBER};
+const CL_TINTS = {1: [GREEN_TINT, GREEN_DARK], 2: ["#EDEFEC", "#4F554D"], 3: ["#E6E8E5", "#1E211D"], 4: ["#FCEFDD", "#8A5410"]};
+const CATS = D.categories, YEARS = D.years, LAST = D.lastYear, FIRST = D.firstYear;
+const LAST_IDX = YEARS.indexOf(LAST);
+const ST = Object.fromEntries(D.states.map(s => [s.name, s]));
+const CL = Object.fromEntries(D.clusters.map(c => [c.id, c]));
+const NAMES = D.states.map(s => s.name).sort();
+const ALL_NAMES = Object.keys(D.history).sort();
+const TOTAL_GW = D.states.reduce((a, s) => a + s.cap, 0);
+const N_STATES = D.states.length, K = D.clusters.length;
+const REG = D.regression;
+const PLOT_CFG = {displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"],
+                  toImageButtonOptions: {format: "png", scale: 2}};
+
+const $ = id => document.getElementById(id);
+const nf = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v)) ? "–" :
+  Number(v).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+const signed = (v, d = 3) => (v >= 0 ? "+" : "−") + nf(Math.abs(v), d);
+const pct = v => (v > 0 && v < 0.1) ? nf(v, 2) + "%" : nf(v, 1) + "%";
+const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const fmtCap = gw => gw >= 1 ? nf(gw, 2) + " GW" : nf(gw * 1000, 1) + " MW";
+const fmtGsdp = v => v < 0.1 ? "₹" + nf(v * 1e5, 0) + " crore" : "₹" + nf(v, 2) + " lakh crore";
+const fmtPop = v => v >= 1 ? nf(v, 2) + " million" : nf(v * 1000, 0) + " thousand";
+const clLabel = c => `Cluster ${c}: ${CL[c].profile}`;
+const chip = (text, c) => { const [bg, fg] = c ? CL_TINTS[c] : [GREEN_TINT, GREEN_DARK];
+  return `<span class="chip" style="background:${bg};color:${fg}"><i style="background:${c ? CL_COLORS[c] : GREEN}"></i>${esc(text)}</span>`; };
+const SVG = p => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  bolt: SVG('<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>'),
+  pin: SVG('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+  groups: SVG('<circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/>'),
+  layers: SVG('<path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 16 10 5 10-5"/>')};
+
+function kpis(cards, accent) {
+  const dot = accent ? `<span class="dot" style="background:${accent}"></span>` : "";
+  return `<div class="kpi-grid">${cards.map(c => `<div class="kpi">${c.icon ? `<div class="icon">${ICONS[c.icon]}</div>` : ""}
+    <div class="label">${dot}${c.label}</div>${c.text ? `<div class="text">${esc(c.text)}</div>` : `<div class="value">${c.value}</div>`}
+    <div class="note">${c.note}</div></div>`).join("")}</div>`;
+}
+function merge(a, b) {          // shallow-deep merge for Plotly layouts
+  const out = {...a};
+  for (const k in b) out[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") ? {...a[k], ...b[k]} : b[k];
+  return out;
+}
+function layout(title, height, extra = {}) {
+  const ax = {gridcolor: GRID, griddash: "dot", zerolinecolor: GRID, linecolor: GRID, tickfont: {color: MUTED}, automargin: true};
+  return merge({
+    title: {text: title, x: 0, xanchor: "left", font: {size: 16, color: INK, weight: 500}},
+    height, font: {family: "Geist, system-ui, sans-serif", size: 13, color: INK},
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#fff", margin: {l: 10, r: 16, t: 44, b: 10},
+    hoverlabel: {bgcolor: "#fff", bordercolor: GRID, font: {size: 12}},
+    legend: {orientation: "h", yanchor: "top", y: -0.16, x: 0, traceorder: "normal"},
+    barcornerradius: 5, bargap: 0.35, xaxis: {...ax}, yaxis: {...ax}}, extra);
+}
+function layoutFor(title, height, extra = {}) {   // pushes legends further down on narrow (phone) screens
+  const l = layout(title, height, extra);
+  if (window.innerWidth < 700 && l.legend && l.legend.y < 0) { l.legend = {...l.legend, y: l.legend.y - 0.17}; l.height = height + 60; }
+  return l;
+}
+const draw = (id, traces, lay) => Plotly.react(id, traces, lay, PLOT_CFG);
+function seg(id, onChange) {     // segmented buttons: returns getter
+  const box = $(id);
+  box.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    box.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    onChange(b.dataset.v);
+  });
+  return () => box.querySelector('[aria-pressed="true"]').dataset.v;
+}
+const valAt = (name, key, i = LAST_IDX) => (D.history[name] && D.history[name][key]) ? D.history[name][key][i] : null;
+
+/* ---------------- header ---------------- */
+(function hero() {
+  const mix = D.latestMix;
+  $("hero").innerHTML = `<div><p class="crumb">WAS Group 3 project dashboard</p>
+    <h1>Deconstructing India's Clean Energy Transition</h1>
+    <p class="sub">State-level renewable energy profiles, capacity and economic scale across ${N_STATES} states and UTs</p></div>
+    <div class="glass"><div class="g-label">Reported renewable capacity, ${LAST}</div>
+    <div class="g-val">${nf(TOTAL_GW, 2)}<span>GW</span></div>
+    <div class="mix-bar">${CATS.map(c => `<span title="${c}: ${nf(mix[c], 2)} GW" style="flex:${mix[c]};background:${CAT_COLORS[c]}"></span>`).join("")}</div>
+    <div class="legend-row">${CATS.map(c => `<span><i style="background:${CAT_COLORS[c]}"></i>${c} <b>${nf(mix[c] / TOTAL_GW * 100, 1)}%</b></span>`).join("")}</div></div>`;
+})();
+
+/* ---------------- tabs ---------------- */
+const rendered = {};
+const renderers = {overview: renderOverview, state: renderState, cluster: renderCluster, history: renderHistory};
+function showTab(name, push = true) {
+  document.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + name);
+  if (!rendered[name]) { renderers[name](); rendered[name] = true; }
+  else document.querySelectorAll(`#p-${name} .js-plotly-plot`).forEach(el => Plotly.Plots.resize(el));
+  if (push) history.replaceState(null, "", "#" + name);
+}
+document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
+
+/* ======================= TAB 1: NATIONAL OVERVIEW ======================= */
+const rankState = {zones: new Set(), clusters: new Set()};
+function renderOverview() {
+  const sil = Object.fromEntries(D.silhouette.map(r => [r.k, r]));
+  $("ov-kpis").innerHTML = kpis([
+    {label: `Reported renewable capacity, ${LAST}`, value: nf(TOTAL_GW, 2) + " GW", note: "Solar, wind, biomass, small hydro and waste-to-energy. Large hydro excluded.", icon: "bolt"},
+    {label: "States and UTs analysed", value: N_STATES, note: `One ${LAST} observation each; used by all three methods.`, icon: "pin"},
+    {label: "K-Means clusters", value: K, note: `Silhouette score ${nf(sil[K].score, 3)} at K = ${K}, with no single-state group.`, icon: "groups"},
+    {label: "PCA variance retained", value: nf(D.pca.PC2.cum, 2) + "%", note: `PC1 ${nf(D.pca.PC1.var, 2)}% (scale) + PC2 ${nf(D.pca.PC2.var, 2)}% (intensity).`, icon: "layers"}]);
+
+  const top = ALL_NAMES.filter(n => valAt(n, "total") !== null).sort((a, b) => valAt(b, "total") - valAt(a, "total")).slice(0, 10).reverse();
+  draw("ov-top10", CATS.map(c => ({type: "bar", orientation: "h", name: c, y: top, x: top.map(n => valAt(n, c) / 1000),
+      marker: {color: CAT_COLORS[c]}, hovertemplate: `<b>%{y}</b><br>${c}: %{x:,.2f} GW<extra></extra>`})),
+    layoutFor(`Top 10 states by reported capacity, ${LAST}`, 430, {barmode: "stack", xaxis: {title: {text: "Installed capacity (GW)"}}, legend: {y: -0.2}}));
+  const topShare = top.reduce((a, n) => a + valAt(n, "total"), 0) / 1000 / TOTAL_GW * 100;
+  $("ov-top10-cap").textContent = `These ten states hold ${nf(topShare, 1)}% of the ${nf(TOTAL_GW, 2)} GW reported in ${LAST}.`;
+
+  const mix = D.latestMix;
+  draw("ov-mix", [{type: "pie", labels: CATS, values: CATS.map(c => mix[c]), hole: .58, sort: false, direction: "clockwise",
+      marker: {colors: CATS.map(c => CAT_COLORS[c]), line: {color: "#fff", width: 2}},
+      text: CATS.map(c => mix[c] / TOTAL_GW >= .03 ? nf(mix[c] / TOTAL_GW * 100, 1) + "%" : ""), textinfo: "text",
+      hovertemplate: "<b>%{label}</b><br>%{value:,.2f} GW (%{percent})<extra></extra>"}],
+    layoutFor(`Capacity by category, ${LAST}`, 430, {legend: {y: -0.05},
+      annotations: [{text: `<b>${nf(TOTAL_GW, 2)}</b><br>GW`, x: .5, y: .5, showarrow: false, font: {size: 18, color: INK}}]}));
+
+  $("rank-sub").textContent = `All ${N_STATES} states and UTs in ${LAST}. Filter, re-rank, or download.`;
+  const zones = [...new Set(D.states.map(s => s.zone))].sort();
+  $("rank-zones").innerHTML = zones.map(z => `<button class="tog" aria-pressed="false" data-z="${esc(z)}">${esc(z)}</button>`).join("");
+  $("rank-clusters").innerHTML = D.clusters.map(c => `<button class="tog" aria-pressed="false" data-c="${c.id}" title="${esc(c.profile)}">Cluster ${c.id}</button>`).join("");
+  const toggle = (box, set, key, parse) => $(box).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return; const v = parse(b.dataset[key]);
+    set.has(v) ? set.delete(v) : set.add(v); b.setAttribute("aria-pressed", set.has(v)); renderRank(); });
+  toggle("rank-zones", rankState.zones, "z", x => x);
+  toggle("rank-clusters", rankState.clusters, "c", Number);
+  $("rank-by").addEventListener("change", renderRank);
+  $("rank-download").addEventListener("click", downloadRank);
+  renderRank();
+
+  const zeros = D.states.filter(s => s.cap === 0).map(s => s.name);
+  if (zeros.length) $("ov-zero").innerHTML = `<div class="note-box amber"><b>Data caution:</b> ${zeros.join(", ")} report zero capacity in ${LAST}. These are kept as reported and should be verified against official records; they are not proof that no capacity exists.</div>`;
+}
+function rankRows() {
+  const key = $("rank-by").value;
+  const ranked = [...D.states].sort((a, b) => b[key] - a[key]);
+  const rank = {}; ranked.forEach((s, i) => rank[s.name] = (i > 0 && s[key] === ranked[i - 1][key]) ? rank[ranked[i - 1].name] : i + 1);
+  return {key, rows: ranked.filter(s => (!rankState.zones.size || rankState.zones.has(s.zone)) &&
+    (!rankState.clusters.size || rankState.clusters.has(s.cluster))).map(s => ({...s, rank: rank[s.name]}))};
+}
+function renderRank() {
+  const {key, rows} = rankRows();
+  if (!rows.length) { $("rank-table").innerHTML = `<div class="empty">No states match these filters. Clear a filter to see results.</div>`; return; }
+  const max = Math.max(...D.states.map(s => s[key]));
+  const cols = [["cap", "Capacity (GW)", 3], ["intensity", "MW per million", 2], ["gsdp", "GSDP (₹ lakh cr)", 3], ["pop", "Population (mn)", 2]];
+  const cell = (s, c) => c[0] === key
+    ? `<td><div class="bar-cell"><div class="track"><div class="fill" style="width:${max ? s[c[0]] / max * 100 : 0}%"></div></div><span>${nf(s[c[0]], c[2])}</span></div></td>`
+    : `<td class="n">${nf(s[c[0]], c[2])}</td>`;
+  $("rank-table").innerHTML = `<div class="tbl-wrap"><table class="data"><thead><tr><th class="n">Rank</th><th>State / UT</th><th>Zone</th>
+    ${cols.map(c => `<th class="${c[0] === key ? "" : "n"}">${c[1]}</th>`).join("")}<th class="n">Cluster</th><th>Cluster profile</th></tr></thead>
+    <tbody>${rows.map(s => `<tr><td class="n">${s.rank}</td><td>${esc(s.name)}</td><td>${esc(s.zone)}</td>${cols.map(c => cell(s, c)).join("")}
+    <td class="n">${s.cluster}</td><td>${esc(CL[s.cluster].profile)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function downloadRank() {
+  const {rows} = rankRows();
+  const head = ["Rank", "State / UT", "Zone", "Capacity GW", "MW per million people", "GSDP lakh crore", "Population millions", "Cluster", "Cluster profile"];
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [head.map(q).join(",")].concat(rows.map(s => [s.rank, s.name, s.zone, s.cap, s.intensity, s.gsdp, s.pop, s.cluster, CL[s.cluster].profile].map(q).join(","))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], {type: "text/csv"}));
+  a.download = `state_ranking_${LAST}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ======================= TAB 2: STATE EXPLORER ======================= */
+let stView = () => "total";
+function renderState() {
+  $("state-pick").innerHTML = NAMES.map(n => `<option${n === "Gujarat" ? " selected" : ""}>${esc(n)}</option>`).join("");
+  $("state-pick").addEventListener("change", drawState);
+  stView = seg("st-view", drawState);
+  drawState();
+}
+function drawState() {
+  const name = $("state-pick").value, s = ST[name], c = s.cluster, h = D.history[name];
+  $("st-head").innerHTML = `<div class="state-head"><h2>${esc(name)}</h2><span class="muted">${esc(s.zone)} zone</span>${chip(clLabel(c), c)}</div>`;
+  $("st-kpi1").innerHTML = kpis([
+    {label: "GSDP", value: fmtGsdp(s.gsdp), note: `Rank ${s.rGsdp} of ${N_STATES}`},
+    {label: "Population", value: fmtPop(s.pop), note: `Rank ${s.rPop} of ${N_STATES}`},
+    {label: `Renewable capacity, ${LAST}`, value: fmtCap(s.cap), note: `Rank ${s.rCap} of ${N_STATES}; ${nf(s.cap / TOTAL_GW * 100, 2)}% of national total`},
+    {label: "Capacity per million people", value: nf(s.intensity, 2) + " MW", note: `Rank ${s.rInt} of ${N_STATES}`}]);
+  $("st-kpi2").innerHTML = kpis([
+    {label: "K-Means cluster", value: `Cluster ${c}`, note: esc(CL[c].profile)},
+    {label: "PCA coordinates (scaled)", value: `${signed(s.pc1)}, ${signed(s.pc2)}`, note: "PC1 = economic and population scale; PC2 = renewable intensity"},
+    {label: "Regression fitted value", value: nf(s.fitted, 3) + " GW", note: "Capacity the 2024 line associates with this GSDP"},
+    {label: "Regression residual", value: signed(s.resid) + " GW", note: (s.resid > 0 ? "Above" : "Below") + " the 2024 regression line (actual minus fitted)"}], CL_COLORS[c]);
+  let notes = "";
+  if (s.fitted < 0) notes += `<p class="cap" style="margin:-4px 0 10px">A negative fitted value is a mathematical feature of the straight line at very small GSDP; it is not a realistic capacity estimate.</p>`;
+  if (s.cap === 0) notes += `<div class="note-box amber"><b>Data caution:</b> ${esc(name)} reports zero capacity in ${LAST}. Treat this as a figure to verify against official MNRE/CEA records, not as confirmed absence of capacity.</div>`;
+  $("st-notes").innerHTML = notes;
+
+  const view = stView();
+  const traces = view === "total"
+    ? [{type: "scatter", mode: "lines+markers", x: YEARS, y: h.total, name: "Total", connectgaps: false,
+        line: {color: GREEN, width: 3}, marker: {size: 6}, fill: "tozeroy", fillcolor: "rgba(107,165,57,0.12)",
+        hovertemplate: "%{x}: %{y:,.1f} MW<extra></extra>"}]
+    : CATS.map(c => ({type: "bar", x: YEARS, y: h[c], name: c, marker: {color: CAT_COLORS[c]},
+        hovertemplate: `%{x}<br>${c}: %{y:,.1f} MW<extra></extra>`}));
+  draw("st-hist", traces, layoutFor(`${name}: reported capacity, ${FIRST}–${LAST}`, 400, {barmode: "stack", showlegend: view !== "total",
+    yaxis: {title: {text: "Capacity (MW)"}, rangemode: "tozero", tickformat: ","}, xaxis: {dtick: 2}}));
+  $("st-hist-cap").textContent = "Source: CLEAN DATA sheet. Descriptive history only; not part of the 2024 regression." +
+    (h.missing.length ? ` No record in the dataset for: ${h.missing.join(", ")} (shown as gaps).` : "");
+
+  const xmax = Math.max(...D.states.map(t => t.gsdp)) * 1.05;
+  const reg = [{type: "scatter", mode: "lines", x: [0, xmax], y: [REG.intercept, REG.intercept + REG.slope * xmax], name: "2024 regression line",
+      line: {color: INK2, width: 2, dash: "dash"}, hoverinfo: "skip"}];
+  D.clusters.forEach(cl => { const sub = D.states.filter(t => t.cluster === cl.id && t.name !== name);
+    reg.push({type: "scatter", mode: "markers", name: `Cluster ${cl.id}`, x: sub.map(t => t.gsdp), y: sub.map(t => t.cap),
+      customdata: sub.map(t => [t.name, t.fitted, t.resid]),
+      marker: {color: CL_COLORS[cl.id], size: 9, opacity: .8, line: {color: "#fff", width: 1}},
+      hovertemplate: "<b>%{customdata[0]}</b><br>GSDP ₹%{x:.2f} lakh cr<br>Actual %{y:.2f} GW<br>Fitted %{customdata[1]:.2f} GW<br>Residual %{customdata[2]:+.2f} GW<extra></extra>"}); });
+  reg.push({type: "scatter", mode: "markers+text", name, x: [s.gsdp], y: [s.cap], text: [name], textposition: "top center", cliponaxis: false,
+    textfont: {color: INK, size: 13}, marker: {color: CL_COLORS[c], size: 16, line: {color: INK, width: 2.5}},
+    hovertemplate: `<b>${esc(name)}</b><br>Actual %{y:.2f} GW<br>Fitted ${nf(s.fitted, 2)} GW<extra></extra>`});
+  draw("st-reg", reg, layoutFor("Where this state sits on the 2024 regression", 400, {legend: {y: -0.22},
+    shapes: [{type: "line", x0: s.gsdp, x1: s.gsdp, y0: s.fitted, y1: s.cap, line: {color: INK, width: 1.5, dash: "dot"}}],
+    xaxis: {title: {text: "GSDP (₹ lakh crore)"}}, yaxis: {title: {text: "Capacity (GW)"}}}));
+  $("st-reg-cap").textContent = `Capacity = ${nf(REG.intercept, 4)} + ${nf(REG.slope, 4)} × GSDP  |  r = ${nf(REG.r, 4)}  |  R² = ${nf(REG.r2, 4)}  |  adj. R² = ${nf(REG.adj_r2, 4)}  |  RMSE = ${nf(REG.rmse, 3)} GW  |  n = ${REG.n}. Descriptive association for 2024, not a forecast or causal estimate.`;
+
+  const box = $("st-flags");
+  box.querySelector("summary").textContent = `Data notes for ${name}`;
+  box.querySelector("div").innerHTML = h.flags.length
+    ? `<p class="muted">The workbook flags these year-on-year decreases in reported capacity. They may reflect source revisions or reporting changes rather than real decommissioning:</p>
+       <table class="mini"><tr><th>Year</th><th>Capacity (MW)</th><th>Change vs previous year (MW)</th></tr>${h.flags.map(f => `<tr><td>${f.Year}</td><td>${nf(f.cap, 3)}</td><td>${nf(f.change, 3)}</td></tr>`).join("")}</table>`
+    : `<p class="muted">No year-on-year decreases in reported capacity are flagged for this state.</p>`;
+}
+
+/* ======================= TAB 3: CLUSTER ANALYSIS ======================= */
+function renderCluster() {
+  $("cl-intro").innerHTML = `States were grouped with <b>K-Means (K = ${K})</b> on their two PCA scores. Cluster numbers are labels, <b>not a ranking</b>: a higher number does not mean better or worse performance.`;
+  $("cl-cards").innerHTML = D.clusters.map(c => `<div class="ccard">${chip("Cluster " + c.id, c.id)}<div class="cname">${esc(c.profile)}</div><table>
+    <tr><td>States / UTs</td><td class="v">${c.n}</td></tr><tr><td>Average GSDP</td><td class="v">₹${nf(c.gsdp, 2)} lakh cr</td></tr>
+    <tr><td>Average capacity</td><td class="v">${nf(c.cap, 2)} GW</td></tr><tr><td>Average intensity</td><td class="v">${nf(c.intensity, 2)} MW/mn</td></tr>
+    <tr><td>Share of national capacity</td><td class="v">${pct(D.shares[c.id].Capacity)}</td></tr></table></div>`).join("");
+
+  const metrics = [["n", "Number of states", 0], ["gsdp", "Average GSDP (₹ lakh cr)", 2], ["cap", "Average capacity (GW)", 2], ["intensity", "Average intensity (MW per million)", 1]];
+  $("cl-bars").innerHTML = metrics.map((m, i) => `<div id="clbar-${i}"></div>`).join("");
+  metrics.forEach((m, i) => { const vals = D.clusters.map(c => c[m[0]]);
+    draw(`clbar-${i}`, [{type: "bar", x: D.clusters.map(c => "C" + c.id), y: vals, marker: {color: D.clusters.map(c => CL_COLORS[c.id])},
+      text: vals.map(v => nf(v, m[2])), textposition: "outside", cliponaxis: false, customdata: D.clusters.map(c => c.profile),
+      hovertemplate: "<b>%{customdata}</b><br>%{y:,.2f}<extra></extra>"}],
+      layoutFor(m[1], 280, {showlegend: false, title: {font: {size: 13}, x: .5, xanchor: "center"}, yaxis: {showticklabels: false, range: [0, Math.max(...vals) * 1.25]}, margin: {l: 4, r: 4, t: 40, b: 10}})); });
+
+  $("pca-labels").addEventListener("change", drawPca);
+  drawPca();
+  const P = D.pca;
+  $("cl-read").innerHTML = `<p style="margin:0 0 6px;font-weight:500">How to read the map</p>
+    <p style="margin:0 0 14px">Moving <b>right</b> means a larger economy and population. Moving <b>up</b> means more renewable capacity per person. Clusters 1 and 4 both sit on the right, but Cluster 1 is high and Cluster 4 is low: similar scale, very different reported intensity.</p>
+    <p style="margin:0;font-weight:500">PCA loadings (from the workbook)</p>
+    <table class="mini"><tr><th></th><th>PC1</th><th>PC2</th></tr>
+      <tr><td>GSDP</td><td>${signed(P.PC1.lG)}</td><td>${signed(P.PC2.lG)}</td></tr>
+      <tr><td>Population</td><td>${signed(P.PC1.lP)}</td><td>${signed(P.PC2.lP)}</td></tr>
+      <tr><td>Capacity per million</td><td>${signed(P.PC1.lI)}</td><td>${signed(P.PC2.lI)}</td></tr></table>
+    <table class="mini"><tr><th>Component</th><th>Eigenvalue</th><th>Variance</th><th>Cumulative</th></tr>
+      ${Object.keys(P).map(k => `<tr><td>${k}</td><td>${nf(P[k].eig, 4)}</td><td>${nf(P[k].var, 2)}%</td><td>${nf(P[k].cum, 2)}%</td></tr>`).join("")}</table>
+    <p class="cap">Scores are scaled by √eigenvalue so both dimensions carry equal weight in K-Means.</p>`;
+
+  const measures = [["GSDP", INK2, "Share of GSDP"], ["Population", "#B9C2B5", "Share of population"], ["Capacity", GREEN, "Share of capacity"]];
+  draw("cl-shares", measures.map(([m, col, nm]) => ({type: "bar", name: nm, x: D.clusters.map(c => "Cluster " + c.id),
+      y: D.clusters.map(c => D.shares[c.id][m]), marker: {color: col}, text: D.clusters.map(c => pct(D.shares[c.id][m])),
+      textposition: "outside", cliponaxis: false, hovertemplate: `%{x}<br>${m} share: %{y:.1f}%<extra></extra>`})),
+    layoutFor("Share of national GSDP, population and capacity by cluster", 380, {barmode: "group", yaxis: {title: {text: "% of national total"}, range: [0, 105]}}));
+  const c4 = D.states.filter(s => s.cluster === 4).map(s => s.name).sort(), s4 = D.shares[4];
+  $("cl-spot").innerHTML = `<div class="note-box amber" style="margin-top:0"><b>Cluster 4</b> (${c4.join(", ")}) holds <b>${nf(s4.GSDP, 1)}%</b> of GSDP and <b>${nf(s4.Population, 1)}%</b> of the population, but only <b>${nf(s4.Capacity, 1)}%</b> of reported renewable capacity. Its average intensity is <b>${nf(CL[4].intensity, 2)} MW per million</b>, against <b>${nf(CL[1].intensity, 2)}</b> in Cluster 1, which holds <b>${nf(D.shares[1].Capacity, 1)}%</b> of capacity.</div>
+    <div class="note-box"><b>How to interpret this.</b> The gap between economic scale and reported capacity is an <b>area for further investigation</b>, not proof of an investment opportunity. The analysis does not test resource quality, land availability, grid and transmission access, project economics, state policy or data coverage, any of which could explain the gap.</div>`;
+
+  $("cluster-pick").innerHTML = D.clusters.map(c => `<option value="${c.id}"${c.id === 4 ? " selected" : ""}>${esc(clLabel(c.id))}</option>`).join("");
+  $("cluster-pick").addEventListener("change", drawMembers);
+  drawMembers();
+
+  $("sil-box").addEventListener("toggle", function () { if (this.open) {
+    const sil = D.silhouette;
+    draw("cl-sil", [{type: "bar", x: sil.map(r => "K = " + r.k), y: sil.map(r => r.score), marker: {color: sil.map(r => r.k === K ? GREEN : "#C9CFC5")},
+      text: sil.map(r => `${nf(r.score, 3)}<br>smallest group: ${r.smallest}`), textposition: "outside", cliponaxis: false, hovertemplate: "%{x}: %{y:.3f}<extra></extra>"}],
+      layoutFor("", 300, {showlegend: false, margin: {t: 20}, yaxis: {title: {text: "Silhouette score"}, range: [0, Math.max(...sil.map(r => r.score)) * 1.3]}}));
+  } });
+}
+function drawPca() {
+  const labels = $("pca-labels").checked;
+  const traces = D.clusters.map(cl => { const sub = D.states.filter(s => s.cluster === cl.id);
+    return {type: "scatter", mode: labels ? "markers+text" : "markers", name: clLabel(cl.id), x: sub.map(s => s.pc1), y: sub.map(s => s.pc2),
+      text: sub.map(s => s.name), textposition: "top center", textfont: {size: 10, color: MUTED},
+      marker: {color: CL_COLORS[cl.id], size: 12, line: {color: "#fff", width: 1.2}},
+      customdata: sub.map(s => [s.name, s.cap, s.intensity, s.gsdp]),
+      hovertemplate: "<b>%{customdata[0]}</b><br>PC1 %{x:+.3f} | PC2 %{y:+.3f}<br>Capacity %{customdata[1]:.2f} GW<br>Intensity %{customdata[2]:.1f} MW/mn<br>GSDP ₹%{customdata[3]:.2f} lakh cr<extra></extra>"}; });
+  traces.push({type: "scatter", mode: "markers", name: "Cluster centres", x: D.clusters.map(c => c.c1), y: D.clusters.map(c => c.c2),
+    marker: {symbol: "x-thin", size: 16, line: {width: 3, color: INK}}, customdata: D.clusters.map(c => `Cluster ${c.id} centre`),
+    hovertemplate: "<b>%{customdata}</b><br>PC1 %{x:+.3f} | PC2 %{y:+.3f}<extra></extra>"});
+  draw("cl-pca", traces, layoutFor("States on the PCA map, coloured by K-Means cluster", 520, {legend: {y: -0.16},
+    shapes: [{type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0, line: {color: "#C9CFC5", width: 1}},
+             {type: "line", yref: "paper", y0: 0, y1: 1, x0: 0, x1: 0, line: {color: "#C9CFC5", width: 1}}],
+    xaxis: {title: {text: `PC1: economic and population scale (${nf(D.pca.PC1.var, 2)}% of variance)`}},
+    yaxis: {title: {text: `PC2: renewable intensity (${nf(D.pca.PC2.var, 2)}%)`}}}));
+}
+function drawMembers() {
+  const c = Number($("cluster-pick").value), g = D.guidance[c];
+  $("cl-guide").innerHTML = kpis([{label: "What to check first", text: g.check, note: "From the START &amp; FINDINGS sheet of the workbook"},
+                                  {label: "Suggested direction", text: g.direction, note: "Indicative only; any project would need a feasibility study"}], CL_COLORS[c]);
+  const m = D.states.filter(s => s.cluster === c).sort((a, b) => b.intensity - a.intensity);
+  $("cl-members").innerHTML = `<div class="tbl-wrap"><table class="data"><thead><tr><th>State / UT</th><th>Zone</th><th class="n">GSDP (₹ lakh cr)</th><th class="n">Population (mn)</th><th class="n">Capacity (GW)</th><th class="n">MW per million</th><th class="n">PC1</th><th class="n">PC2</th></tr></thead>
+    <tbody>${m.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.zone)}</td><td class="n">${nf(s.gsdp, 3)}</td><td class="n">${nf(s.pop, 2)}</td><td class="n">${nf(s.cap, 3)}</td><td class="n">${nf(s.intensity, 2)}</td><td class="n">${signed(s.pc1)}</td><td class="n">${signed(s.pc2)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("cl-members-cap").textContent = c === 2 ? "Several members report zero or very low capacity. Verify these figures before drawing conclusions."
+    : c === 3 ? "High intensity here rests on very small populations, so ratios should be read with caution." : "";
+}
+
+/* ======================= TAB 4: HISTORICAL TRENDS ======================= */
+const NAT = D.national;
+let natView = () => "stack";
+const cmpState = {picked: []};
+const MEASURES = {"Total capacity": "total", ...Object.fromEntries(CATS.map(c => [c, c])), "Capacity per million people": "intensity"};
+function renderHistory() {
+  const cv = D.coverage;
+  $("hi-cov").innerHTML = `<b>Read these charts as descriptive history.</b> The number of states/UTs in the dataset varies in the earlier years (${cv.gaps.join("; ")}; all ${cv.nAll} from ${cv.fullFrom}). Totals for early years therefore cover fewer geographies. These charts are <b>not part of the 2024 PCA, K-Means or regression</b>.`;
+  $("hi-missing").innerHTML = cv.missingByYear.map(t => `<li>${esc(t)}</li>`).join("");
+
+  natView = seg("nat-view", drawNational); drawNational();
+
+  const yr = $("year-pick"); yr.min = FIRST; yr.max = LAST; yr.value = LAST;
+  yr.addEventListener("input", drawYear); $("top-n").addEventListener("change", drawYear); drawYear();
+
+  cmpState.picked = ALL_NAMES.filter(n => valAt(n, "total") !== null).sort((a, b) => valAt(b, "total") - valAt(a, "total")).slice(0, 5);
+  $("cmp-measure").innerHTML = Object.keys(MEASURES).map(m => `<option>${m}</option>`).join("");
+  $("cmp-measure").addEventListener("change", drawCompare); $("cmp-log").addEventListener("change", drawCompare);
+  $("cmp-add").addEventListener("change", e => { if (e.target.value) { cmpState.picked.push(e.target.value); drawCompare(); } });
+  $("cmp-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+    cmpState.picked = cmpState.picked.filter(n => n !== b.dataset.n); drawCompare(); });
+  drawCompare();
+
+  $("cat-zone").innerHTML = ["All India", ...[...new Set(ALL_NAMES.map(n => D.history[n].zone))].sort()].map(z => `<option>${z}</option>`).join("");
+  $("cat-zone").addEventListener("change", drawCategory); drawCategory();
+
+  const q = D.quality;
+  $("hi-quality").querySelector("div").innerHTML = `<p>The workbook flags <b>${q.flagged.length}</b> year-on-year decreases in reported capacity. Most are tiny (rounding-level) changes; a few are large.</p>
+    ${q.dropped.length ? `<p>Reported capacity falls to zero for: ${q.dropped.map(esc).join("; ")}. This supports the report's advice to verify zero values against official records.</p>` : ""}
+    <div class="tbl-wrap" style="max-height:360px;border:1px solid var(--grid)"><table class="data"><thead><tr><th>State / UT</th><th class="n">Year</th><th class="n">Capacity (MW)</th><th class="n">Change (MW)</th></tr></thead>
+    <tbody>${q.flagged.map(f => `<tr><td>${esc(f.name)}</td><td class="n">${f.year}</td><td class="n">${nf(f.cap, 3)}</td><td class="n">${nf(f.change, 3)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function drawNational() {
+  const v = natView(); let traces;
+  if (v === "total") traces = [{type: "scatter", mode: "lines+markers", name: "Total", x: NAT.years, y: NAT.total, customdata: NAT.count,
+      line: {color: GREEN, width: 3}, fill: "tozeroy", fillcolor: "rgba(107,165,57,0.12)",
+      hovertemplate: "%{x}: %{y:,.2f} GW<br>States/UTs reported: %{customdata}<extra></extra>"}];
+  else traces = CATS.map(c => ({type: "scatter", mode: "lines", stackgroup: "one", name: c, x: NAT.years,
+      y: v === "share" ? NAT[c].map((x, i) => x / NAT.total[i] * 100) : NAT[c], customdata: NAT.count,
+      line: {width: .6, color: CAT_COLORS[c]}, fillcolor: CAT_COLORS[c],
+      hovertemplate: `${c}: ` + (v === "share" ? "%{y:.1f}%" : "%{y:,.2f} GW") + "<br>States/UTs reported: %{customdata}<extra></extra>"}));
+  draw("hi-nat", traces, layoutFor(`National reported renewable capacity, ${FIRST}–${LAST}`, 420, {hovermode: "x unified", showlegend: v !== "total",
+    yaxis: {title: {text: v === "share" ? "Share of reported capacity (%)" : "Reported capacity (GW)"}}, xaxis: {dtick: 2}}));
+}
+function drawYear() {
+  const year = Number($("year-pick").value), n = Number($("top-n").value), i = YEARS.indexOf(year);
+  $("year-out").textContent = year;
+  const tot = NAT.total[i], count = NAT.count[i];
+  let change = "No earlier year in the dataset";
+  if (i > 0) { change = `${(tot - NAT.total[i - 1] >= 0 ? "+" : "−")}${nf(Math.abs(tot - NAT.total[i - 1]), 2)} GW vs ${year - 1}` +
+    (NAT.count[i - 1] !== count ? " (coverage changed)" : ""); }
+  const big = CATS.reduce((a, c) => NAT[c][i] > NAT[a][i] ? c : a, CATS[0]);
+  $("hi-kpis").innerHTML = kpis([
+    {label: `Reported capacity, ${year}`, value: nf(tot, 2) + " GW", note: change},
+    {label: "States / UTs in the data", value: count, note: `of ${D.coverage.nAll} in the full dataset`},
+    {label: "Largest category", value: big, note: `${nf(NAT[big][i] / tot * 100, 1)}% of the year's total`},
+    {label: "Solar share", value: nf(NAT.Solar[i] / tot * 100, 1) + "%", note: `${nf(NAT.Solar[i], 2)} GW of solar reported`}]);
+  const top = ALL_NAMES.filter(s => valAt(s, "total", i) !== null).sort((a, b) => valAt(b, "total", i) - valAt(a, "total", i)).slice(0, n).reverse();
+  draw("hi-top", CATS.map(c => ({type: "bar", orientation: "h", name: c, y: top, x: top.map(s => valAt(s, c, i) / 1000),
+      marker: {color: CAT_COLORS[c]}, hovertemplate: `<b>%{y}</b><br>${c}: %{x:,.2f} GW<extra></extra>`})),
+    layoutFor(`Top ${n} states by reported capacity, ${year}`, Math.max(320, 34 * n + 120), {barmode: "stack", xaxis: {title: {text: "Capacity (GW)"}}}));
+}
+function drawCompare() {
+  $("cmp-add").innerHTML = `<option value="">Choose…</option>` + ALL_NAMES.filter(n => !cmpState.picked.includes(n)).map(n => `<option>${esc(n)}</option>`).join("");
+  $("cmp-chips").innerHTML = cmpState.picked.map(n => `<button class="tog" aria-pressed="true" data-n="${esc(n)}" aria-label="Remove ${esc(n)}">${esc(n)}<span class="x" aria-hidden="true">×</span></button>`).join("");
+  if (!cmpState.picked.length) { $("cmp-card").innerHTML = `<div class="empty">Add at least one state or UT to draw the comparison.</div>`; return; }
+  if (!$("hi-cmp")) $("cmp-card").innerHTML = `<div id="hi-cmp"></div><p class="cap" id="hi-cmp-cap"></p>`;
+  const mName = $("cmp-measure").value, key = MEASURES[mName], log = $("cmp-log").checked;
+  const unit = key === "intensity" ? "MW per million" : "MW";
+  const palette = [INK, GREEN, "#7FA7B3", AMBER, "#9BC53D", "#8C6E4E", "#AEB4AB", "#4E7F2E", "#C0573E", "#6E6A9E"];
+  const traces = cmpState.picked.map((n, j) => ({type: "scatter", mode: "lines+markers", name: n, x: YEARS, connectgaps: false,
+    y: D.history[n][key].map(v => (log && !(v > 0)) ? null : v), line: {width: 2.4, color: palette[j % palette.length]}, marker: {size: 5},
+    hovertemplate: `<b>${esc(n)}</b> %{x}: %{y:,.1f} ${unit}<extra></extra>`}));
+  draw("hi-cmp", traces, layoutFor(`${mName} by state, ${FIRST}–${LAST}`, 430, {hovermode: "x unified",
+    yaxis: {title: {text: unit}, type: log ? "log" : "linear", tickformat: ","}, xaxis: {dtick: 2}}));
+  $("hi-cmp-cap").textContent = log ? "Zero values cannot be shown on a log scale and are left blank." : "";
+}
+function drawCategory() {
+  const zone = $("cat-zone").value;
+  const names = ALL_NAMES.filter(n => zone === "All India" || D.history[n].zone === zone);
+  const series = Object.fromEntries(CATS.map(c => [c, YEARS.map((y, i) => names.reduce((a, n) => a + (valAt(n, c, i) || 0), 0) / 1000)]));
+  draw("hi-cat", CATS.map(c => ({type: "scatter", mode: "lines+markers", name: c, x: YEARS, y: series[c],
+      line: {color: CAT_COLORS[c], width: 2.6}, marker: {size: 5}, hovertemplate: `${c}: %{y:,.2f} GW<extra></extra>`})),
+    layoutFor(`Reported capacity by category, ${zone}`, 400, {hovermode: "x unified", yaxis: {title: {text: "Capacity (GW)"}}, xaxis: {dtick: 2}}));
+  const from = YEARS.indexOf(D.coverage.fullFrom);
+  const growth = Object.fromEntries(CATS.map(c => [c, series[c][LAST_IDX] - series[c][from]]));
+  const lead = CATS.reduce((a, c) => growth[c] > growth[a] ? c : a, CATS[0]);
+  $("hi-cat-cap").textContent = `In ${zone}, ${lead.toLowerCase()} added the most reported capacity between ${D.coverage.fullFrom} and ${LAST} (+${nf(growth[lead], 2)} GW). ${D.coverage.fullFrom} is used as the start because every state/UT is present from that year.`;
+}
+
+/* ---------------- about + footer ---------------- */
+$("about").querySelector("div").innerHTML = `
+  <p>This dashboard presents a completed academic analysis of renewable energy capacity across India's states and Union Territories. All statistical results are read from the project workbook.</p>
+  <p style="margin-bottom:4px"><b>The three methods</b></p>
+  <ol style="margin-top:0"><li><b>PCA</b> reduces GSDP, population and capacity per million people (all logged and standardised) to two scores that keep <b>${nf(D.pca.PC2.cum, 2)}%</b> of the variation.</li>
+  <li><b>K-Means (K = ${K})</b> groups states on those two scores into descriptive profiles.</li>
+  <li><b>Simple regression</b> describes how ${LAST} capacity relates to GSDP (R² = ${nf(REG.r2, 4)}). It is an association, not a forecast.</li></ol>
+  <p style="margin-bottom:4px"><b>Data scope</b></p>
+  <ul style="margin-top:0"><li>${LAST} cross-section of ${N_STATES} states/UTs for all three methods.</li><li>${FIRST}–${LAST} history is shown for description only.</li>
+  <li>Five categories: solar, wind, biomass, small hydro, waste-to-energy. <b>Large hydro is excluded.</b></li></ul>
+  <p style="margin-bottom:4px"><b>Limitations (from the workbook)</b></p>
+  <ul style="margin-top:0">${D.limitations.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`;
+$("foot").textContent = `Source: project workbook built from the India Renewable Energy Dataset (Kaggle, chrisjaimyantony). Figures are dataset-reported and cover five renewable categories; large hydro is excluded. PCA, K-Means and regression results are read from the workbook and describe ${LAST} only. This is an academic screening aid, not an investment recommendation or forecast. Site built ${D.built}.`;
+
+/* ---------------- start ---------------- */
+window.addEventListener("resize", () => document.querySelectorAll(".panel:not([hidden]) .js-plotly-plot").forEach(el => Plotly.Plots.resize(el)));
+const start = (location.hash || "#overview").slice(1);
+showTab(renderers[start] ? start : "overview", false);
+</script>
+</body>
+</html>

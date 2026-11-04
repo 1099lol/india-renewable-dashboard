@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>India Renewable Energy | State Profiles Dashboard</title>
+<meta name="description" content="Interactive dashboard: state-level renewable energy profiles, capacity and economic scale across 34 Indian states and UTs (WAS Group 3).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Charting library stored next to this file, so the site has no external code dependency -->
+<script src="plotly.min.js"></script>
+<style>
+:root{--ink:#1E211D;--ink2:#3B403A;--muted:#6D736B;--green:#6BA539;--green-dark:#4A7A22;--green-tint:#EAF3E0;
+--sage:#CFD9CB;--page:#EEF0EC;--grid:#E9ECE6;--amber:#E0902B;--card:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font-family:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:1380px;margin:0 auto;padding:20px 24px 48px}
+h2,h3{font-weight:500;letter-spacing:-.015em;margin:0}
+a{color:var(--green-dark)}
+button,select,input{font-family:inherit;font-size:.92rem;color:var(--ink)}
+/* hero */
+.hero{background:var(--sage);border-radius:26px;padding:30px 34px 28px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:34px;align-items:end}
+.hero .crumb{color:#5A6357;font-size:.85rem;margin:0 0 14px}
+.hero h1{font-size:2.35rem;line-height:1.08;font-weight:300;letter-spacing:-.03em;margin:0 0 12px}
+.hero .sub{color:#4E574B;margin:0}
+.glass{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.85);border-radius:20px;padding:18px 20px}
+.glass .g-label{color:#4E574B;font-size:.85rem}
+.glass .g-val{font-size:2.2rem;letter-spacing:-.03em;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.glass .g-val span{font-size:1rem;color:#4E574B;margin-left:4px}
+.mix-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--ink);gap:2px}
+.mix-bar span{display:block;min-width:3px}
+.legend-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.8rem;color:#4E574B}
+.legend-row i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.legend-row b{color:var(--ink);font-weight:500}
+/* tabs */
+.tabs{display:inline-flex;flex-wrap:wrap;gap:4px;background:#fff;padding:5px;border-radius:999px;margin-bottom:14px}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:9px 18px;font-weight:500;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+.tabs button:focus-visible,.seg button:focus-visible,.tog:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.panel[hidden]{display:none}
+/* cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:4px 0 14px}
+.kpi{background:#fff;border-radius:20px;padding:16px 18px 14px;position:relative}
+.kpi .label{color:var(--muted);font-size:.84rem;margin-bottom:6px;padding-right:40px}
+.kpi .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+.kpi .value{font-size:1.75rem;letter-spacing:-.025em;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .text{font-size:1.02rem;font-weight:500;line-height:1.4}
+.kpi .note{color:var(--muted);font-size:.78rem;margin-top:6px;line-height:1.4}
+.kpi .icon{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:var(--page);display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:22px;padding:18px 20px;min-width:0}
+.row{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.row.even{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.row.wide{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+@media (max-width:900px){.hero,.row,.row.even,.row.wide{grid-template-columns:1fr}.hero h1{font-size:1.8rem}}
+.cap{color:var(--muted);font-size:.82rem;margin:8px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:.8rem;font-weight:500}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.cluster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:6px 0 14px}
+.ccard{background:#fff;border-radius:20px;padding:16px 18px}
+.ccard .cname{font-weight:500;margin:10px 0;line-height:1.3;min-height:2.6em}
+.ccard table{width:100%;font-size:.84rem;border-collapse:collapse}
+.ccard td{padding:4px 0;color:var(--muted);border-top:1px solid var(--grid)}
+.ccard td.v{text-align:right;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.note-box{background:#fff;border-radius:16px;padding:13px 18px;font-size:.9rem;margin:6px 0 14px}
+.note-box.amber{background:#FCEFDD;color:#4A3210}
+.note-box b{font-weight:600}
+.section-title{font-size:1.2rem;font-weight:500;margin:22px 0 2px;letter-spacing:-.01em}
+.section-sub{color:var(--muted);font-size:.88rem;margin:0 0 10px}
+.state-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:8px 0 12px}
+.state-head h2{font-size:1.9rem;font-weight:400;letter-spacing:-.025em}
+.muted{color:var(--muted);font-size:.88rem}
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;margin:6px 0 12px}
+.ctl{display:flex;flex-direction:column;gap:5px;min-width:180px}
+.ctl label,.ctl .lbl{font-size:.82rem;color:var(--muted)}
+select{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231E211D' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;border:1px solid #E3E7E0;border-radius:12px;padding:10px 38px 10px 14px;min-width:220px;cursor:pointer}
+select.full{width:100%}
+.seg{display:inline-flex;background:#fff;border-radius:999px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:999px;padding:7px 14px;color:var(--muted);cursor:pointer;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.toggles{display:flex;flex-wrap:wrap;gap:6px}
+.tog{border:1px solid #E3E7E0;background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;font-size:.84rem;color:var(--muted)}
+.tog[aria-pressed="true"]{background:var(--green-tint);border-color:#CFE3BA;color:var(--green-dark);font-weight:500}
+.tog .x{margin-left:6px;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--green-dark)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--ink);cursor:pointer;user-select:none}
+.switch input{accent-color:var(--green-dark);width:16px;height:16px}
+.btn{border:1px solid #DCE2D8;background:#fff;border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--green-tint)}
+/* tables */
+.tbl-wrap{background:#fff;border-radius:18px;overflow:auto;max-height:540px}
+table.data{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+table.data th{position:sticky;top:0;background:#F7F8F5;text-align:left;font-weight:500;color:var(--muted);padding:10px 12px;white-space:nowrap}
+table.data td{padding:9px 12px;border-top:1px solid var(--grid);white-space:nowrap}
+table.data td.n,table.data th.n{text-align:right}
+.bar-cell{display:flex;align-items:center;gap:8px;min-width:150px}
+.bar-cell .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
+.bar-cell .fill{height:100%;background:var(--green-dark)}
+table.mini{border-collapse:collapse;font-size:.86rem;width:100%;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+table.mini th,table.mini td{padding:6px 8px;border-top:1px solid var(--grid);text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+table.mini th{color:var(--muted);font-weight:500}
+details.panel-box{background:#fff;border-radius:16px;padding:12px 18px;margin:10px 0}
+details.panel-box summary{cursor:pointer;font-weight:500}
+details.panel-box[open] summary{margin-bottom:10px}
+.small-multiples{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:900px){.small-multiples{grid-template-columns:repeat(2,minmax(0,1fr))}}
+footer{border-top:1px solid #DCE2D8;margin-top:28px;padding-top:14px;color:var(--muted);font-size:.8rem}
+.empty{background:#fff;border-radius:16px;padding:16px 18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hero" class="hero"></header>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button role="tab" id="tab-overview" aria-controls="p-overview" aria-selected="true" data-tab="overview">National overview</button>
+    <button role="tab" id="tab-state" aria-controls="p-state" aria-selected="false" data-tab="state">State explorer</button>
+    <button role="tab" id="tab-cluster" aria-controls="p-cluster" aria-selected="false" data-tab="cluster">Cluster analysis</button>
+    <button role="tab" id="tab-history" aria-controls="p-history" aria-selected="false" data-tab="history">Historical trends</button>
+  </nav>
+
+  <!-- ===================== TAB 1: NATIONAL OVERVIEW ===================== -->
+  <section class="panel" id="p-overview" role="tabpanel" aria-labelledby="tab-overview">
+    <div id="ov-kpis"></div>
+    <div class="row">
+      <div class="card"><div id="ov-top10"></div><p class="cap" id="ov-top10-cap"></p></div>
+      <div class="card"><div id="ov-mix"></div><p class="cap">Large hydro is not part of the dataset, so totals are lower than official all-renewable figures.</p></div>
+    </div>
+    <div class="section-title">State-wise ranking</div>
+    <p class="section-sub" id="rank-sub"></p>
+    <div class="controls">
+      <div class="ctl"><label for="rank-by">Rank by</label>
+        <select id="rank-by">
+          <option value="cap">Renewable capacity (GW)</option>
+          <option value="intensity">Capacity per million people (MW)</option>
+          <option value="gsdp">GSDP (₹ lakh crore)</option>
+          <option value="pop">Population (million)</option>
+        </select></div>
+      <div class="ctl"><span class="lbl">Zone (none selected = all)</span><div class="toggles" id="rank-zones"></div></div>
+      <div class="ctl"><span class="lbl">Cluster (none selected = all)</span><div class="toggles" id="rank-clusters"></div></div>
+    </div>
+    <div id="rank-table"></div>
+    <p style="margin:10px 0"><button class="btn" id="rank-download">Download this table (CSV)</button></p>
+    <div id="ov-zero"></div>
+  </section>
+
+  <!-- ===================== TAB 2: STATE EXPLORER ===================== -->
+  <section class="panel" id="p-state" role="tabpanel" aria-labelledby="tab-state" hidden>
+    <div class="ctl" style="max-width:520px"><label for="state-pick">Select a state or Union Territory</label><select id="state-pick" class="full"></select></div>
+    <div id="st-head"></div>
+    <div id="st-kpi1"></div>
+    <div id="st-kpi2"></div>
+    <div id="st-notes"></div>
+    <div class="controls"><div class="ctl"><span class="lbl">History chart shows</span>
+      <div class="seg" id="st-view"><button aria-pressed="true" data-v="total">Total capacity</button><button aria-pressed="false" data-v="cat">By category</button></div></div></div>
+    <div class="row even">
+      <div class="card"><div id="st-hist"></div><p class="cap" id="st-hist-cap"></p></div>
+      <div class="card"><div id="st-reg"></div><p class="cap" id="st-reg-cap"></p></div>
+    </div>
+    <details class="panel-box" id="st-flags"><summary></summary><div></div></details>
+  </section>
+
+  <!-- ===================== TAB 3: CLUSTER ANALYSIS ===================== -->
+  <section class="panel" id="p-cluster" role="tabpanel" aria-labelledby="tab-cluster" hidden>
+    <div class="note-box" id="cl-intro"></div>
+    <div class="cluster-grid" id="cl-cards"></div>
+    <div class="card" style="margin-bottom:14px"><div class="small-multiples" id="cl-bars"></div><p class="cap">Values are read from the K-MEANS sheet of the workbook.</p></div>
+    <div class="row wide">
+      <div class="card">
+        <label class="switch"><input type="checkbox" id="pca-labels"> Show state names on the map</label>
+        <div id="cl-pca"></div>
+      </div>
+      <div class="card" id="cl-read"></div>
+    </div>
+    <div class="section-title" id="spot-title">Spotlight: Cluster 4, large economies with low reported renewable intensity</div>
+    <p class="section-sub">Share of the national total held by each cluster, computed from the 2024 STATES sheet.</p>
+    <div class="row">
+      <div class="card"><div id="cl-shares"></div></div>
+      <div id="cl-spot"></div>
+    </div>
+    <div class="section-title">Explore a cluster</div>
+    <p class="section-sub">Choose a cluster to see its member states and the workbook's suggested next checks.</p>
+    <div class="ctl" style="max-width:520px"><label for="cluster-pick">Cluster</label><select id="cluster-pick" class="full"></select></div>
+    <div id="cl-guide" style="margin-top:12px"></div>
+    <div id="cl-members"></div>
+    <p class="cap" id="cl-members-cap"></p>
+    <details class="panel-box" id="sil-box"><summary>Why K = 4? (silhouette scores from the workbook)</summary><div id="cl-sil"></div>
+      <p class="muted">K = 5 scores marginally higher but isolates a single state. K = 4 gives clearly separated groups with no single-state cluster, so it was selected.</p></details>
+  </section>
+
+  <!-- ===================== TAB 4: HISTORICAL TRENDS ===================== -->
+  <section class="panel" id="p-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+    <div class="note-box amber" id="hi-cov"></div>
+    <details class="panel-box"><summary>Which states/UTs are missing in which years?</summary><ul id="hi-missing" style="margin:0;padding-left:20px"></ul></details>
+    <div class="card" style="margin:14px 0">
+      <div class="seg" id="nat-view"><button aria-pressed="true" data-v="stack">Stacked by category</button><button aria-pressed="false" data-v="total">Total only</button><button aria-pressed="false" data-v="share">Category share (%)</button></div>
+      <div id="hi-nat"></div>
+    </div>
+    <div class="section-title">Inspect a single year</div>
+    <div class="controls">
+      <div class="ctl" style="flex:1;min-width:260px"><label for="year-pick">Year: <b id="year-out"></b></label><input type="range" id="year-pick" step="1"></div>
+      <div class="ctl"><label for="top-n">Show top</label><select id="top-n"><option>5</option><option selected>10</option><option>15</option></select></div>
+    </div>
+    <div id="hi-kpis"></div>
+    <div class="card" style="margin-bottom:14px"><div id="hi-top"></div></div>
+    <div class="section-title">Compare states over time</div>
+    <p class="section-sub">Add or remove states to compare. Years with no record appear as gaps.</p>
+    <div class="controls">
+      <div class="ctl"><label for="cmp-add">Add a state or UT</label><select id="cmp-add"></select></div>
+      <div class="ctl"><label for="cmp-measure">Measure</label><select id="cmp-measure"></select></div>
+      <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="cmp-log"> Log scale</label>
+    </div>
+    <div class="toggles" id="cmp-chips" style="margin-bottom:10px"></div>
+    <div class="card" style="margin-bottom:14px" id="cmp-card"><div id="hi-cmp"></div><p class="cap" id="hi-cmp-cap"></p></div>
+    <div class="section-title">Energy-category trends</div>
+    <p class="section-sub">Reported capacity per category. Narrow to a zone to see regional patterns.</p>
+    <div class="ctl" style="max-width:320px"><label for="cat-zone">Zone</label><select id="cat-zone"></select></div>
+    <div class="card" style="margin:12px 0 14px"><div id="hi-cat"></div><p class="cap" id="hi-cat-cap"></p></div>
+    <details class="panel-box" id="hi-quality"><summary>Data quality notes for the historical series</summary><div></div></details>
+  </section>
+
+  <details class="panel-box" id="about"><summary>About this dashboard, methods and limitations</summary><div></div></details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+"use strict";
+/* All data below is generated by build_site.py from the project workbook. */
+const D = /*__DATA__*/null;
+
+/* ---------------- constants and helpers ---------------- */
+const INK = "#1E211D", INK2 = "#3B403A", MUTED = "#6D736B", GREEN = "#6BA539", GREEN_DARK = "#4A7A22",
+      GREEN_TINT = "#EAF3E0", GRID = "#E9ECE6", AMBER = "#E0902B";
+const CAT_COLORS = {"Solar": "#9BC53D", "Wind": "#2E332D", "Biomass": "#4E7F2E", "Small hydro": "#7FA7B3", "Waste-to-energy": "#BFB197"};
+const CL_COLORS = {1: GREEN, 2: "#AEB4AB", 3: "#2E332D", 4: AMBER};
+const CL_TINTS = {1: [GREEN_TINT, GREEN_DARK], 2: ["#EDEFEC", "#4F554D"], 3: ["#E6E8E5", "#1E211D"], 4: ["#FCEFDD", "#8A5410"]};
+const CATS = D.categories, YEARS = D.years, LAST = D.lastYear, FIRST = D.firstYear;
+const LAST_IDX = YEARS.indexOf(LAST);
+const ST = Object.fromEntries(D.states.map(s => [s.name, s]));
+const CL = Object.fromEntries(D.clusters.map(c => [c.id, c]));
+const NAMES = D.states.map(s => s.name).sort();
+const ALL_NAMES = Object.keys(D.history).sort();
+const TOTAL_GW = D.states.reduce((a, s) => a + s.cap, 0);
+const N_STATES = D.states.length, K = D.clusters.length;
+const REG = D.regression;
+const PLOT_CFG = {displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"],
+                  toImageButtonOptions: {format: "png", scale: 2}};
+
+const $ = id => document.getElementById(id);
+const nf = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v)) ? "–" :
+  Number(v).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+const signed = (v, d = 3) => (v >= 0 ? "+" : "−") + nf(Math.abs(v), d);
+const pct = v => (v > 0 && v < 0.1) ? nf(v, 2) + "%" : nf(v, 1) + "%";
+const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const fmtCap = gw => gw >= 1 ? nf(gw, 2) + " GW" : nf(gw * 1000, 1) + " MW";
+const fmtGsdp = v => v < 0.1 ? "₹" + nf(v * 1e5, 0) + " crore" : "₹" + nf(v, 2) + " lakh crore";
+const fmtPop = v => v >= 1 ? nf(v, 2) + " million" : nf(v * 1000, 0) + " thousand";
+const clLabel = c => `Cluster ${c}: ${CL[c].profile}`;
+const chip = (text, c) => { const [bg, fg] = c ? CL_TINTS[c] : [GREEN_TINT, GREEN_DARK];
+  return `<span class="chip" style="background:${bg};color:${fg}"><i style="background:${c ? CL_COLORS[c] : GREEN}"></i>${esc(text)}</span>`; };
+const SVG = p => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  bolt: SVG('<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>'),
+  pin: SVG('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+  groups: SVG('<circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/>'),
+  layers: SVG('<path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 16 10 5 10-5"/>')};
+
+function kpis(cards, accent) {
+  const dot = accent ? `<span class="dot" style="background:${accent}"></span>` : "";
+  return `<div class="kpi-grid">${cards.map(c => `<div class="kpi">${c.icon ? `<div class="icon">${ICONS[c.icon]}</div>` : ""}
+    <div class="label">${dot}${c.label}</div>${c.text ? `<div class="text">${esc(c.text)}</div>` : `<div class="value">${c.value}</div>`}
+    <div class="note">${c.note}</div></div>`).join("")}</div>`;
+}
+function merge(a, b) {          // shallow-deep merge for Plotly layouts
+  const out = {...a};
+  for (const k in b) out[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") ? {...a[k], ...b[k]} : b[k];
+  return out;
+}
+function layout(title, height, extra = {}) {
+  const ax = {gridcolor: GRID, griddash: "dot", zerolinecolor: GRID, linecolor: GRID, tickfont: {color: MUTED}, automargin: true};
+  return merge({
+    title: {text: title, x: 0, xanchor: "left", font: {size: 16, color: INK, weight: 500}},
+    height, font: {family: "Geist, system-ui, sans-serif", size: 13, color: INK},
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#fff", margin: {l: 10, r: 16, t: 44, b: 10},
+    hoverlabel: {bgcolor: "#fff", bordercolor: GRID, font: {size: 12}},
+    legend: {orientation: "h", yanchor: "top", y: -0.16, x: 0, traceorder: "normal"},
+    barcornerradius: 5, bargap: 0.35, xaxis: {...ax}, yaxis: {...ax}}, extra);
+}
+function layoutFor(title, height, extra = {}) {   // pushes legends further down on narrow (phone) screens
+  const l = layout(title, height, extra);
+  if (window.innerWidth < 700 && l.legend && l.legend.y < 0) { l.legend = {...l.legend, y: l.legend.y - 0.17}; l.height = height + 60; }
+  return l;
+}
+const draw = (id, traces, lay) => Plotly.react(id, traces, lay, PLOT_CFG);
+function seg(id, onChange) {     // segmented buttons: returns getter
+  const box = $(id);
+  box.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    box.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    onChange(b.dataset.v);
+  });
+  return () => box.querySelector('[aria-pressed="true"]').dataset.v;
+}
+const valAt = (name, key, i = LAST_IDX) => (D.history[name] && D.history[name][key]) ? D.history[name][key][i] : null;
+
+/* ---------------- header ---------------- */
+(function hero() {
+  const mix = D.latestMix;
+  $("hero").innerHTML = `<div><p class="crumb">WAS Group 3 project dashboard</p>
+    <h1>Deconstructing India's Clean Energy Transition</h1>
+    <p class="sub">State-level renewable energy profiles, capacity and economic scale across ${N_STATES} states and UTs</p></div>
+    <div class="glass"><div class="g-label">Reported renewable capacity, ${LAST}</div>
+    <div class="g-val">${nf(TOTAL_GW, 2)}<span>GW</span></div>
+    <div class="mix-bar">${CATS.map(c => `<span title="${c}: ${nf(mix[c], 2)} GW" style="flex:${mix[c]};background:${CAT_COLORS[c]}"></span>`).join("")}</div>
+    <div class="legend-row">${CATS.map(c => `<span><i style="background:${CAT_COLORS[c]}"></i>${c} <b>${nf(mix[c] / TOTAL_GW * 100, 1)}%</b></span>`).join("")}</div></div>`;
+})();
+
+/* ---------------- tabs ---------------- */
+const rendered = {};
+const renderers = {overview: renderOverview, state: renderState, cluster: renderCluster, history: renderHistory};
+function showTab(name, push = true) {
+  document.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== "p-" + name);
+  if (!rendered[name]) { renderers[name](); rendered[name] = true; }
+  else document.querySelectorAll(`#p-${name} .js-plotly-plot`).forEach(el => Plotly.Plots.resize(el));
+  if (push) history.replaceState(null, "", "#" + name);
+}
+document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
+
+/* ======================= TAB 1: NATIONAL OVERVIEW ======================= */
+const rankState = {zones: new Set(), clusters: new Set()};
+function renderOverview() {
+  const sil = Object.fromEntries(D.silhouette.map(r => [r.k, r]));
+  $("ov-kpis").innerHTML = kpis([
+    {label: `Reported renewable capacity, ${LAST}`, value: nf(TOTAL_GW, 2) + " GW", note: "Solar, wind, biomass, small hydro and waste-to-energy. Large hydro excluded.", icon: "bolt"},
+    {label: "States and UTs analysed", value: N_STATES, note: `One ${LAST} observation each; used by all three methods.`, icon: "pin"},
+    {label: "K-Means clusters", value: K, note: `Silhouette score ${nf(sil[K].score, 3)} at K = ${K}, with no single-state group.`, icon: "groups"},
+    {label: "PCA variance retained", value: nf(D.pca.PC2.cum, 2) + "%", note: `PC1 ${nf(D.pca.PC1.var, 2)}% (scale) + PC2 ${nf(D.pca.PC2.var, 2)}% (intensity).`, icon: "layers"}]);
+
+  const top = ALL_NAMES.filter(n => valAt(n, "total") !== null).sort((a, b) => valAt(b, "total") - valAt(a, "total")).slice(0, 10).reverse();
+  draw("ov-top10", CATS.map(c => ({type: "bar", orientation: "h", name: c, y: top, x: top.map(n => valAt(n, c) / 1000),
+      marker: {color: CAT_COLORS[c]}, hovertemplate: `<b>%{y}</b><br>${c}: %{x:,.2f} GW<extra></extra>`})),
+    layoutFor(`Top 10 states by reported capacity, ${LAST}`, 430, {barmode: "stack", xaxis: {title: {text: "Installed capacity (GW)"}}, legend: {y: -0.2}}));
+  const topShare = top.reduce((a, n) => a + valAt(n, "total"), 0) / 1000 / TOTAL_GW * 100;
+  $("ov-top10-cap").textContent = `These ten states hold ${nf(topShare, 1)}% of the ${nf(TOTAL_GW, 2)} GW reported in ${LAST}.`;
+
+  const mix = D.latestMix;
+  draw("ov-mix", [{type: "pie", labels: CATS, values: CATS.map(c => mix[c]), hole: .58, sort: false, direction: "clockwise",
+      marker: {colors: CATS.map(c => CAT_COLORS[c]), line: {color: "#fff", width: 2}},
+      text: CATS.map(c => mix[c] / TOTAL_GW >= .03 ? nf(mix[c] / TOTAL_GW * 100, 1) + "%" : ""), textinfo: "text",
+      hovertemplate: "<b>%{label}</b><br>%{value:,.2f} GW (%{percent})<extra></extra>"}],
+    layoutFor(`Capacity by category, ${LAST}`, 430, {legend: {y: -0.05},
+      annotations: [{text: `<b>${nf(TOTAL_GW, 2)}</b><br>GW`, x: .5, y: .5, showarrow: false, font: {size: 18, color: INK}}]}));
+
+  $("rank-sub").textContent = `All ${N_STATES} states and UTs in ${LAST}. Filter, re-rank, or download.`;
+  const zones = [...new Set(D.states.map(s => s.zone))].sort();
+  $("rank-zones").innerHTML = zones.map(z => `<button class="tog" aria-pressed="false" data-z="${esc(z)}">${esc(z)}</button>`).join("");
+  $("rank-clusters").innerHTML = D.clusters.map(c => `<button class="tog" aria-pressed="false" data-c="${c.id}" title="${esc(c.profile)}">Cluster ${c.id}</button>`).join("");
+  const toggle = (box, set, key, parse) => $(box).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return; const v = parse(b.dataset[key]);
+    set.has(v) ? set.delete(v) : set.add(v); b.setAttribute("aria-pressed", set.has(v)); renderRank(); });
+  toggle("rank-zones", rankState.zones, "z", x => x);
+  toggle("rank-clusters", rankState.clusters, "c", Number);
+  $("rank-by").addEventListener("change", renderRank);
+  $("rank-download").addEventListener("click", downloadRank);
+  renderRank();
+
+  const zeros = D.states.filter(s => s.cap === 0).map(s => s.name);
+  if (zeros.length) $("ov-zero").innerHTML = `<div class="note-box amber"><b>Data caution:</b> ${zeros.join(", ")} report zero capacity in ${LAST}. These are kept as reported and should be verified against official records; they are not proof that no capacity exists.</div>`;
+}
+function rankRows() {
+  const key = $("rank-by").value;
+  const ranked = [...D.states].sort((a, b) => b[key] - a[key]);
+  const rank = {}; ranked.forEach((s, i) => rank[s.name] = (i > 0 && s[key] === ranked[i - 1][key]) ? rank[ranked[i - 1].name] : i + 1);
+  return {key, rows: ranked.filter(s => (!rankState.zones.size || rankState.zones.has(s.zone)) &&
+    (!rankState.clusters.size || rankState.clusters.has(s.cluster))).map(s => ({...s, rank: rank[s.name]}))};
+}
+function renderRank() {
+  const {key, rows} = rankRows();
+  if (!rows.length) { $("rank-table").innerHTML = `<div class="empty">No states match these filters. Clear a filter to see results.</div>`; return; }
+  const max = Math.max(...D.states.map(s => s[key]));
+  const cols = [["cap", "Capacity (GW)", 3], ["intensity", "MW per million", 2], ["gsdp", "GSDP (₹ lakh cr)", 3], ["pop", "Population (mn)", 2]];
+  const cell = (s, c) => c[0] === key
+    ? `<td><div class="bar-cell"><div class="track"><div class="fill" style="width:${max ? s[c[0]] / max * 100 : 0}%"></div></div><span>${nf(s[c[0]], c[2])}</span></div></td>`
+    : `<td class="n">${nf(s[c[0]], c[2])}</td>`;
+  $("rank-table").innerHTML = `<div class="tbl-wrap"><table class="data"><thead><tr><th class="n">Rank</th><th>State / UT</th><th>Zone</th>
+    ${cols.map(c => `<th class="${c[0] === key ? "" : "n"}">${c[1]}</th>`).join("")}<th class="n">Cluster</th><th>Cluster profile</th></tr></thead>
+    <tbody>${rows.map(s => `<tr><td class="n">${s.rank}</td><td>${esc(s.name)}</td><td>${esc(s.zone)}</td>${cols.map(c => cell(s, c)).join("")}
+    <td class="n">${s.cluster}</td><td>${esc(CL[s.cluster].profile)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function downloadRank() {
+  const {rows} = rankRows();
+  const head = ["Rank", "State / UT", "Zone", "Capacity GW", "MW per million people", "GSDP lakh crore", "Population millions", "Cluster", "Cluster profile"];
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [head.map(q).join(",")].concat(rows.map(s => [s.rank, s.name, s.zone, s.cap, s.intensity, s.gsdp, s.pop, s.cluster, CL[s.cluster].profile].map(q).join(","))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], {type: "text/csv"}));
+  a.download = `state_ranking_${LAST}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ======================= TAB 2: STATE EXPLORER ======================= */
+let stView = () => "total";
+function renderState() {
+  $("state-pick").innerHTML = NAMES.map(n => `<option${n === "Gujarat" ? " selected" : ""}>${esc(n)}</option>`).join("");
+  $("state-pick").addEventListener("change", drawState);
+  stView = seg("st-view", drawState);
+  drawState();
+}
+function drawState() {
+  const name = $("state-pick").value, s = ST[name], c = s.cluster, h = D.history[name];
+  $("st-head").innerHTML = `<div class="state-head"><h2>${esc(name)}</h2><span class="muted">${esc(s.zone)} zone</span>${chip(clLabel(c), c)}</div>`;
+  $("st-kpi1").innerHTML = kpis([
+    {label: "GSDP", value: fmtGsdp(s.gsdp), note: `Rank ${s.rGsdp} of ${N_STATES}`},
+    {label: "Population", value: fmtPop(s.pop), note: `Rank ${s.rPop} of ${N_STATES}`},
+    {label: `Renewable capacity, ${LAST}`, value: fmtCap(s.cap), note: `Rank ${s.rCap} of ${N_STATES}; ${nf(s.cap / TOTAL_GW * 100, 2)}% of national total`},
+    {label: "Capacity per million people", value: nf(s.intensity, 2) + " MW", note: `Rank ${s.rInt} of ${N_STATES}`}]);
+  $("st-kpi2").innerHTML = kpis([
+    {label: "K-Means cluster", value: `Cluster ${c}`, note: esc(CL[c].profile)},
+    {label: "PCA coordinates (scaled)", value: `${signed(s.pc1)}, ${signed(s.pc2)}`, note: "PC1 = economic and population scale; PC2 = renewable intensity"},
+    {label: "Regression fitted value", value: nf(s.fitted, 3) + " GW", note: "Capacity the 2024 line associates with this GSDP"},
+    {label: "Regression residual", value: signed(s.resid) + " GW", note: (s.resid > 0 ? "Above" : "Below") + " the 2024 regression line (actual minus fitted)"}], CL_COLORS[c]);
+  let notes = "";
+  if (s.fitted < 0) notes += `<p class="cap" style="margin:-4px 0 10px">A negative fitted value is a mathematical feature of the straight line at very small GSDP; it is not a realistic capacity estimate.</p>`;
+  if (s.cap === 0) notes += `<div class="note-box amber"><b>Data caution:</b> ${esc(name)} reports zero capacity in ${LAST}. Treat this as a figure to verify against official MNRE/CEA records, not as confirmed absence of capacity.</div>`;
+  $("st-notes").innerHTML = notes;
+
+  const view = stView();
+  const traces = view === "total"
+    ? [{type: "scatter", mode: "lines+markers", x: YEARS, y: h.total, name: "Total", connectgaps: false,
+        line: {color: GREEN, width: 3}, marker: {size: 6}, fill: "tozeroy", fillcolor: "rgba(107,165,57,0.12)",
+        hovertemplate: "%{x}: %{y:,.1f} MW<extra></extra>"}]
+    : CATS.map(c => ({type: "bar", x: YEARS, y: h[c], name: c, marker: {color: CAT_COLORS[c]},
+        hovertemplate: `%{x}<br>${c}: %{y:,.1f} MW<extra></extra>`}));
+  draw("st-hist", traces, layoutFor(`${name}: reported capacity, ${FIRST}–${LAST}`, 400, {barmode: "stack", showlegend: view !== "total",
+    yaxis: {title: {text: "Capacity (MW)"}, rangemode: "tozero", tickformat: ","}, xaxis: {dtick: 2}}));
+  $("st-hist-cap").textContent = "Source: CLEAN DATA sheet. Descriptive history only; not part of the 2024 regression." +
+    (h.missing.length ? ` No record in the dataset for: ${h.missing.join(", ")} (shown as gaps).` : "");
+
+  const xmax = Math.max(...D.states.map(t => t.gsdp)) * 1.05;
+  const reg = [{type: "scatter", mode: "lines", x: [0, xmax], y: [REG.intercept, REG.intercept + REG.slope * xmax], name: "2024 regression line",
+      line: {color: INK2, width: 2, dash: "dash"}, hoverinfo: "skip"}];
+  D.clusters.forEach(cl => { const sub = D.states.filter(t => t.cluster === cl.id && t.name !== name);
+    reg.push({type: "scatter", mode: "markers", name: `Cluster ${cl.id}`, x: sub.map(t => t.gsdp), y: sub.map(t => t.cap),
+      customdata: sub.map(t => [t.name, t.fitted, t.resid]),
+      marker: {color: CL_COLORS[cl.id], size: 9, opacity: .8, line: {color: "#fff", width: 1}},
+      hovertemplate: "<b>%{customdata[0]}</b><br>GSDP ₹%{x:.2f} lakh cr<br>Actual %{y:.2f} GW<br>Fitted %{customdata[1]:.2f} GW<br>Residual %{customdata[2]:+.2f} GW<extra></extra>"}); });
+  reg.push({type: "scatter", mode: "markers+text", name, x: [s.gsdp], y: [s.cap], text: [name], textposition: "top center", cliponaxis: false,
+    textfont: {color: INK, size: 13}, marker: {color: CL_COLORS[c], size: 16, line: {color: INK, width: 2.5}},
+    hovertemplate: `<b>${esc(name)}</b><br>Actual %{y:.2f} GW<br>Fitted ${nf(s.fitted, 2)} GW<extra></extra>`});
+  draw("st-reg", reg, layoutFor("Where this state sits on the 2024 regression", 400, {legend: {y: -0.22},
+    shapes: [{type: "line", x0: s.gsdp, x1: s.gsdp, y0: s.fitted, y1: s.cap, line: {color: INK, width: 1.5, dash: "dot"}}],
+    xaxis: {title: {text: "GSDP (₹ lakh crore)"}}, yaxis: {title: {text: "Capacity (GW)"}}}));
+  $("st-reg-cap").textContent = `Capacity = ${nf(REG.intercept, 4)} + ${nf(REG.slope, 4)} × GSDP  |  r = ${nf(REG.r, 4)}  |  R² = ${nf(REG.r2, 4)}  |  adj. R² = ${nf(REG.adj_r2, 4)}  |  RMSE = ${nf(REG.rmse, 3)} GW  |  n = ${REG.n}. Descriptive association for 2024, not a forecast or causal estimate.`;
+
+  const box = $("st-flags");
+  box.querySelector("summary").textContent = `Data notes for ${name}`;
+  box.querySelector("div").innerHTML = h.flags.length
+    ? `<p class="muted">The workbook flags these year-on-year decreases in reported capacity. They may reflect source revisions or reporting changes rather than real decommissioning:</p>
+       <table class="mini"><tr><th>Year</th><th>Capacity (MW)</th><th>Change vs previous year (MW)</th></tr>${h.flags.map(f => `<tr><td>${f.Year}</td><td>${nf(f.cap, 3)}</td><td>${nf(f.change, 3)}</td></tr>`).join("")}</table>`
+    : `<p class="muted">No year-on-year decreases in reported capacity are flagged for this state.</p>`;
+}
+
+/* ======================= TAB 3: CLUSTER ANALYSIS ======================= */
+function renderCluster() {
+  $("cl-intro").innerHTML = `States were grouped with <b>K-Means (K = ${K})</b> on their two PCA scores. Cluster numbers are labels, <b>not a ranking</b>: a higher number does not mean better or worse performance.`;
+  $("cl-cards").innerHTML = D.clusters.map(c => `<div class="ccard">${chip("Cluster " + c.id, c.id)}<div class="cname">${esc(c.profile)}</div><table>
+    <tr><td>States / UTs</td><td class="v">${c.n}</td></tr><tr><td>Average GSDP</td><td class="v">₹${nf(c.gsdp, 2)} lakh cr</td></tr>
+    <tr><td>Average capacity</td><td class="v">${nf(c.cap, 2)} GW</td></tr><tr><td>Average intensity</td><td class="v">${nf(c.intensity, 2)} MW/mn</td></tr>
+    <tr><td>Share of national capacity</td><td class="v">${pct(D.shares[c.id].Capacity)}</td></tr></table></div>`).join("");
+
+  const metrics = [["n", "Number of states", 0], ["gsdp", "Average GSDP (₹ lakh cr)", 2], ["cap", "Average capacity (GW)", 2], ["intensity", "Average intensity (MW per million)", 1]];
+  $("cl-bars").innerHTML = metrics.map((m, i) => `<div id="clbar-${i}"></div>`).join("");
+  metrics.forEach((m, i) => { const vals = D.clusters.map(c => c[m[0]]);
+    draw(`clbar-${i}`, [{type: "bar", x: D.clusters.map(c => "C" + c.id), y: vals, marker: {color: D.clusters.map(c => CL_COLORS[c.id])},
+      text: vals.map(v => nf(v, m[2])), textposition: "outside", cliponaxis: false, customdata: D.clusters.map(c => c.profile),
+      hovertemplate: "<b>%{customdata}</b><br>%{y:,.2f}<extra></extra>"}],
+      layoutFor(m[1], 280, {showlegend: false, title: {font: {size: 13}, x: .5, xanchor: "center"}, yaxis: {showticklabels: false, range: [0, Math.max(...vals) * 1.25]}, margin: {l: 4, r: 4, t: 40, b: 10}})); });
+
+  $("pca-labels").addEventListener("change", drawPca);
+  drawPca();
+  const P = D.pca;
+  $("cl-read").innerHTML = `<p style="margin:0 0 6px;font-weight:500">How to read the map</p>
+    <p style="margin:0 0 14px">Moving <b>right</b> means a larger economy and population. Moving <b>up</b> means more renewable capacity per person. Clusters 1 and 4 both sit on the right, but Cluster 1 is high and Cluster 4 is low: similar scale, very different reported intensity.</p>
+    <p style="margin:0;font-weight:500">PCA loadings (from the workbook)</p>
+    <table class="mini"><tr><th></th><th>PC1</th><th>PC2</th></tr>
+      <tr><td>GSDP</td><td>${signed(P.PC1.lG)}</td><td>${signed(P.PC2.lG)}</td></tr>
+      <tr><td>Population</td><td>${signed(P.PC1.lP)}</td><td>${signed(P.PC2.lP)}</td></tr>
+      <tr><td>Capacity per million</td><td>${signed(P.PC1.lI)}</td><td>${signed(P.PC2.lI)}</td></tr></table>
+    <table class="mini"><tr><th>Component</th><th>Eigenvalue</th><th>Variance</th><th>Cumulative</th></tr>
+      ${Object.keys(P).map(k => `<tr><td>${k}</td><td>${nf(P[k].eig, 4)}</td><td>${nf(P[k].var, 2)}%</td><td>${nf(P[k].cum, 2)}%</td></tr>`).join("")}</table>
+    <p class="cap">Scores are scaled by √eigenvalue so both dimensions carry equal weight in K-Means.</p>`;
+
+  const measures = [["GSDP", INK2, "Share of GSDP"], ["Population", "#B9C2B5", "Share of population"], ["Capacity", GREEN, "Share of capacity"]];
+  draw("cl-shares", measures.map(([m, col, nm]) => ({type: "bar", name: nm, x: D.clusters.map(c => "Cluster " + c.id),
+      y: D.clusters.map(c => D.shares[c.id][m]), marker: {color: col}, text: D.clusters.map(c => pct(D.shares[c.id][m])),
+      textposition: "outside", cliponaxis: false, hovertemplate: `%{x}<br>${m} share: %{y:.1f}%<extra></extra>`})),
+    layoutFor("Share of national GSDP, population and capacity by cluster", 380, {barmode: "group", yaxis: {title: {text: "% of national total"}, range: [0, 105]}}));
+  const c4 = D.states.filter(s => s.cluster === 4).map(s => s.name).sort(), s4 = D.shares[4];
+  $("cl-spot").innerHTML = `<div class="note-box amber" style="margin-top:0"><b>Cluster 4</b> (${c4.join(", ")}) holds <b>${nf(s4.GSDP, 1)}%</b> of GSDP and <b>${nf(s4.Population, 1)}%</b> of the population, but only <b>${nf(s4.Capacity, 1)}%</b> of reported renewable capacity. Its average intensity is <b>${nf(CL[4].intensity, 2)} MW per million</b>, against <b>${nf(CL[1].intensity, 2)}</b> in Cluster 1, which holds <b>${nf(D.shares[1].Capacity, 1)}%</b> of capacity.</div>
+    <div class="note-box"><b>How to interpret this.</b> The gap between economic scale and reported capacity is an <b>area for further investigation</b>, not proof of an investment opportunity. The analysis does not test resource quality, land availability, grid and transmission access, project economics, state policy or data coverage, any of which could explain the gap.</div>`;
+
+  $("cluster-pick").innerHTML = D.clusters.map(c => `<option value="${c.id}"${c.id === 4 ? " selected" : ""}>${esc(clLabel(c.id))}</option>`).join("");
+  $("cluster-pick").addEventListener("change", drawMembers);
+  drawMembers();
+
+  $("sil-box").addEventListener("toggle", function () { if (this.open) {
+    const sil = D.silhouette;
+    draw("cl-sil", [{type: "bar", x: sil.map(r => "K = " + r.k), y: sil.map(r => r.score), marker: {color: sil.map(r => r.k === K ? GREEN : "#C9CFC5")},
+      text: sil.map(r => `${nf(r.score, 3)}<br>smallest group: ${r.smallest}`), textposition: "outside", cliponaxis: false, hovertemplate: "%{x}: %{y:.3f}<extra></extra>"}],
+      layoutFor("", 300, {showlegend: false, margin: {t: 20}, yaxis: {title: {text: "Silhouette score"}, range: [0, Math.max(...sil.map(r => r.score)) * 1.3]}}));
+  } });
+}
+function drawPca() {
+  const labels = $("pca-labels").checked;
+  const traces = D.clusters.map(cl => { const sub = D.states.filter(s => s.cluster === cl.id);
+    return {type: "scatter", mode: labels ? "markers+text" : "markers", name: clLabel(cl.id), x: sub.map(s => s.pc1), y: sub.map(s => s.pc2),
+      text: sub.map(s => s.name), textposition: "top center", textfont: {size: 10, color: MUTED},
+      marker: {color: CL_COLORS[cl.id], size: 12, line: {color: "#fff", width: 1.2}},
+      customdata: sub.map(s => [s.name, s.cap, s.intensity, s.gsdp]),
+      hovertemplate: "<b>%{customdata[0]}</b><br>PC1 %{x:+.3f} | PC2 %{y:+.3f}<br>Capacity %{customdata[1]:.2f} GW<br>Intensity %{customdata[2]:.1f} MW/mn<br>GSDP ₹%{customdata[3]:.2f} lakh cr<extra></extra>"}; });
+  traces.push({type: "scatter", mode: "markers", name: "Cluster centres", x: D.clusters.map(c => c.c1), y: D.clusters.map(c => c.c2),
+    marker: {symbol: "x-thin", size: 16, line: {width: 3, color: INK}}, customdata: D.clusters.map(c => `Cluster ${c.id} centre`),
+    hovertemplate: "<b>%{customdata}</b><br>PC1 %{x:+.3f} | PC2 %{y:+.3f}<extra></extra>"});
+  draw("cl-pca", traces, layoutFor("States on the PCA map, coloured by K-Means cluster", 520, {legend: {y: -0.16},
+    shapes: [{type: "line", xref: "paper", x0: 0, x1: 1, y0: 0, y1: 0, line: {color: "#C9CFC5", width: 1}},
+             {type: "line", yref: "paper", y0: 0, y1: 1, x0: 0, x1: 0, line: {color: "#C9CFC5", width: 1}}],
+    xaxis: {title: {text: `PC1: economic and population scale (${nf(D.pca.PC1.var, 2)}% of variance)`}},
+    yaxis: {title: {text: `PC2: renewable intensity (${nf(D.pca.PC2.var, 2)}%)`}}}));
+}
+function drawMembers() {
+  const c = Number($("cluster-pick").value), g = D.guidance[c];
+  $("cl-guide").innerHTML = kpis([{label: "What to check first", text: g.check, note: "From the START &amp; FINDINGS sheet of the workbook"},
+                                  {label: "Suggested direction", text: g.direction, note: "Indicative only; any project would need a feasibility study"}], CL_COLORS[c]);
+  const m = D.states.filter(s => s.cluster === c).sort((a, b) => b.intensity - a.intensity);
+  $("cl-members").innerHTML = `<div class="tbl-wrap"><table class="data"><thead><tr><th>State / UT</th><th>Zone</th><th class="n">GSDP (₹ lakh cr)</th><th class="n">Population (mn)</th><th class="n">Capacity (GW)</th><th class="n">MW per million</th><th class="n">PC1</th><th class="n">PC2</th></tr></thead>
+    <tbody>${m.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.zone)}</td><td class="n">${nf(s.gsdp, 3)}</td><td class="n">${nf(s.pop, 2)}</td><td class="n">${nf(s.cap, 3)}</td><td class="n">${nf(s.intensity, 2)}</td><td class="n">${signed(s.pc1)}</td><td class="n">${signed(s.pc2)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("cl-members-cap").textContent = c === 2 ? "Several members report zero or very low capacity. Verify these figures before drawing conclusions."
+    : c === 3 ? "High intensity here rests on very small populations, so ratios should be read with caution." : "";
+}
+
+/* ======================= TAB 4: HISTORICAL TRENDS ======================= */
+const NAT = D.national;
+let natView = () => "stack";
+const cmpState = {picked: []};
+const MEASURES = {"Total capacity": "total", ...Object.fromEntries(CATS.map(c => [c, c])), "Capacity per million people": "intensity"};
+function renderHistory() {
+  const cv = D.coverage;
+  $("hi-cov").innerHTML = `<b>Read these charts as descriptive history.</b> The number of states/UTs in the dataset varies in the earlier years (${cv.gaps.join("; ")}; all ${cv.nAll} from ${cv.fullFrom}). Totals for early years therefore cover fewer geographies. These charts are <b>not part of the 2024 PCA, K-Means or regression</b>.`;
+  $("hi-missing").innerHTML = cv.missingByYear.map(t => `<li>${esc(t)}</li>`).join("");
+
+  natView = seg("nat-view", drawNational); drawNational();
+
+  const yr = $("year-pick"); yr.min = FIRST; yr.max = LAST; yr.value = LAST;
+  yr.addEventListener("input", drawYear); $("top-n").addEventListener("change", drawYear); drawYear();
+
+  cmpState.picked = ALL_NAMES.filter(n => valAt(n, "total") !== null).sort((a, b) => valAt(b, "total") - valAt(a, "total")).slice(0, 5);
+  $("cmp-measure").innerHTML = Object.keys(MEASURES).map(m => `<option>${m}</option>`).join("");
+  $("cmp-measure").addEventListener("change", drawCompare); $("cmp-log").addEventListener("change", drawCompare);
+  $("cmp-add").addEventListener("change", e => { if (e.target.value) { cmpState.picked.push(e.target.value); drawCompare(); } });
+  $("cmp-chips").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+    cmpState.picked = cmpState.picked.filter(n => n !== b.dataset.n); drawCompare(); });
+  drawCompare();
+
+  $("cat-zone").innerHTML = ["All India", ...[...new Set(ALL_NAMES.map(n => D.history[n].zone))].sort()].map(z => `<option>${z}</option>`).join("");
+  $("cat-zone").addEventListener("change", drawCategory); drawCategory();
+
+  const q = D.quality;
+  $("hi-quality").querySelector("div").innerHTML = `<p>The workbook flags <b>${q.flagged.length}</b> year-on-year decreases in reported capacity. Most are tiny (rounding-level) changes; a few are large.</p>
+    ${q.dropped.length ? `<p>Reported capacity falls to zero for: ${q.dropped.map(esc).join("; ")}. This supports the report's advice to verify zero values against official records.</p>` : ""}
+    <div class="tbl-wrap" style="max-height:360px;border:1px solid var(--grid)"><table class="data"><thead><tr><th>State / UT</th><th class="n">Year</th><th class="n">Capacity (MW)</th><th class="n">Change (MW)</th></tr></thead>
+    <tbody>${q.flagged.map(f => `<tr><td>${esc(f.name)}</td><td class="n">${f.year}</td><td class="n">${nf(f.cap, 3)}</td><td class="n">${nf(f.change, 3)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function drawNational() {
+  const v = natView(); let traces;
+  if (v === "total") traces = [{type: "scatter", mode: "lines+markers", name: "Total", x: NAT.years, y: NAT.total, customdata: NAT.count,
+      line: {color: GREEN, width: 3}, fill: "tozeroy", fillcolor: "rgba(107,165,57,0.12)",
+      hovertemplate: "%{x}: %{y:,.2f} GW<br>States/UTs reported: %{customdata}<extra></extra>"}];
+  else traces = CATS.map(c => ({type: "scatter", mode: "lines", stackgroup: "one", name: c, x: NAT.years,
+      y: v === "share" ? NAT[c].map((x, i) => x / NAT.total[i] * 100) : NAT[c], customdata: NAT.count,
+      line: {width: .6, color: CAT_COLORS[c]}, fillcolor: CAT_COLORS[c],
+      hovertemplate: `${c}: ` + (v === "share" ? "%{y:.1f}%" : "%{y:,.2f} GW") + "<br>States/UTs reported: %{customdata}<extra></extra>"}));
+  draw("hi-nat", traces, layoutFor(`National reported renewable capacity, ${FIRST}–${LAST}`, 420, {hovermode: "x unified", showlegend: v !== "total",
+    yaxis: {title: {text: v === "share" ? "Share of reported capacity (%)" : "Reported capacity (GW)"}}, xaxis: {dtick: 2}}));
+}
+function drawYear() {
+  const year = Number($("year-pick").value), n = Number($("top-n").value), i = YEARS.indexOf(year);
+  $("year-out").textContent = year;
+  const tot = NAT.total[i], count = NAT.count[i];
+  let change = "No earlier year in the dataset";
+  if (i > 0) { change = `${(tot - NAT.total[i - 1] >= 0 ? "+" : "−")}${nf(Math.abs(tot - NAT.total[i - 1]), 2)} GW vs ${year - 1}` +
+    (NAT.count[i - 1] !== count ? " (coverage changed)" : ""); }
+  const big = CATS.reduce((a, c) => NAT[c][i] > NAT[a][i] ? c : a, CATS[0]);
+  $("hi-kpis").innerHTML = kpis([
+    {label: `Reported capacity, ${year}`, value: nf(tot, 2) + " GW", note: change},
+    {label: "States / UTs in the data", value: count, note: `of ${D.coverage.nAll} in the full dataset`},
+    {label: "Largest category", value: big, note: `${nf(NAT[big][i] / tot * 100, 1)}% of the year's total`},
+    {label: "Solar share", value: nf(NAT.Solar[i] / tot * 100, 1) + "%", note: `${nf(NAT.Solar[i], 2)} GW of solar reported`}]);
+  const top = ALL_NAMES.filter(s => valAt(s, "total", i) !== null).sort((a, b) => valAt(b, "total", i) - valAt(a, "total", i)).slice(0, n).reverse();
+  draw("hi-top", CATS.map(c => ({type: "bar", orientation: "h", name: c, y: top, x: top.map(s => valAt(s, c, i) / 1000),
+      marker: {color: CAT_COLORS[c]}, hovertemplate: `<b>%{y}</b><br>${c}: %{x:,.2f} GW<extra></extra>`})),
+    layoutFor(`Top ${n} states by reported capacity, ${year}`, Math.max(320, 34 * n + 120), {barmode: "stack", xaxis: {title: {text: "Capacity (GW)"}}}));
+}
+function drawCompare() {
+  $("cmp-add").innerHTML = `<option value="">Choose…</option>` + ALL_NAMES.filter(n => !cmpState.picked.includes(n)).map(n => `<option>${esc(n)}</option>`).join("");
+  $("cmp-chips").innerHTML = cmpState.picked.map(n => `<button class="tog" aria-pressed="true" data-n="${esc(n)}" aria-label="Remove ${esc(n)}">${esc(n)}<span class="x" aria-hidden="true">×</span></button>`).join("");
+  if (!cmpState.picked.length) { $("cmp-card").innerHTML = `<div class="empty">Add at least one state or UT to draw the comparison.</div>`; return; }
+  if (!$("hi-cmp")) $("cmp-card").innerHTML = `<div id="hi-cmp"></div><p class="cap" id="hi-cmp-cap"></p>`;
+  const mName = $("cmp-measure").value, key = MEASURES[mName], log = $("cmp-log").checked;
+  const unit = key === "intensity" ? "MW per million" : "MW";
+  const palette = [INK, GREEN, "#7FA7B3", AMBER, "#9BC53D", "#8C6E4E", "#AEB4AB", "#4E7F2E", "#C0573E", "#6E6A9E"];
+  const traces = cmpState.picked.map((n, j) => ({type: "scatter", mode: "lines+markers", name: n, x: YEARS, connectgaps: false,
+    y: D.history[n][key].map(v => (log && !(v > 0)) ? null : v), line: {width: 2.4, color: palette[j % palette.length]}, marker: {size: 5},
+    hovertemplate: `<b>${esc(n)}</b> %{x}: %{y:,.1f} ${unit}<extra></extra>`}));
+  draw("hi-cmp", traces, layoutFor(`${mName} by state, ${FIRST}–${LAST}`, 430, {hovermode: "x unified",
+    yaxis: {title: {text: unit}, type: log ? "log" : "linear", tickformat: ","}, xaxis: {dtick: 2}}));
+  $("hi-cmp-cap").textContent = log ? "Zero values cannot be shown on a log scale and are left blank." : "";
+}
+function drawCategory() {
+  const zone = $("cat-zone").value;
+  const names = ALL_NAMES.filter(n => zone === "All India" || D.history[n].zone === zone);
+  const series = Object.fromEntries(CATS.map(c => [c, YEARS.map((y, i) => names.reduce((a, n) => a + (valAt(n, c, i) || 0), 0) / 1000)]));
+  draw("hi-cat", CATS.map(c => ({type: "scatter", mode: "lines+markers", name: c, x: YEARS, y: series[c],
+      line: {color: CAT_COLORS[c], width: 2.6}, marker: {size: 5}, hovertemplate: `${c}: %{y:,.2f} GW<extra></extra>`})),
+    layoutFor(`Reported capacity by category, ${zone}`, 400, {hovermode: "x unified", yaxis: {title: {text: "Capacity (GW)"}}, xaxis: {dtick: 2}}));
+  const from = YEARS.indexOf(D.coverage.fullFrom);
+  const growth = Object.fromEntries(CATS.map(c => [c, series[c][LAST_IDX] - series[c][from]]));
+  const lead = CATS.reduce((a, c) => growth[c] > growth[a] ? c : a, CATS[0]);
+  $("hi-cat-cap").textContent = `In ${zone}, ${lead.toLowerCase()} added the most reported capacity between ${D.coverage.fullFrom} and ${LAST} (+${nf(growth[lead], 2)} GW). ${D.coverage.fullFrom} is used as the start because every state/UT is present from that year.`;
+}
+
+/* ---------------- about + footer ---------------- */
+$("about").querySelector("div").innerHTML = `
+  <p>This dashboard presents a completed academic analysis of renewable energy capacity across India's states and Union Territories. All statistical results are read from the project workbook.</p>
+  <p style="margin-bottom:4px"><b>The three methods</b></p>
+  <ol style="margin-top:0"><li><b>PCA</b> reduces GSDP, population and capacity per million people (all logged and standardised) to two scores that keep <b>${nf(D.pca.PC2.cum, 2)}%</b> of the variation.</li>
+  <li><b>K-Means (K = ${K})</b> groups states on those two scores into descriptive profiles.</li>
+  <li><b>Simple regression</b> describes how ${LAST} capacity relates to GSDP (R² = ${nf(REG.r2, 4)}). It is an association, not a forecast.</li></ol>
+  <p style="margin-bottom:4px"><b>Data scope</b></p>
+  <ul style="margin-top:0"><li>${LAST} cross-section of ${N_STATES} states/UTs for all three methods.</li><li>${FIRST}–${LAST} history is shown for description only.</li>
+  <li>Five categories: solar, wind, biomass, small hydro, waste-to-energy. <b>Large hydro is excluded.</b></li></ul>
+  <p style="margin-bottom:4px"><b>Limitations (from the workbook)</b></p>
+  <ul style="margin-top:0">${D.limitations.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`;
+$("foot").textContent = `Source: project workbook built from the India Renewable Energy Dataset (Kaggle, chrisjaimyantony). Figures are dataset-reported and cover five renewable categories; large hydro is excluded. PCA, K-Means and regression results are read from the workbook and describe ${LAST} only. This is an academic screening aid, not an investment recommendation or forecast. Site built ${D.built}.`;
+
+/* ---------------- start ---------------- */
+window.addEventListener("resize", () => document.querySelectorAll(".panel:not([hidden]) .js-plotly-plot").forEach(el => Plotly.Plots.resize(el)));
+const start = (location.hash || "#overview").slice(1);
+showTab(renderers[start] ? start : "overview", false);
+</script>
+</body>
+</html>

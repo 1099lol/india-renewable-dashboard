@@ -1,0 +1,26 @@
+   # Streamlit theme: greentech aesthetic (sage, white, charcoal, leaf green).
+   # Read automatically by Streamlit locally and on Streamlit Community Cloud.
+   # Keep this folder name exactly: .streamlit
+   [theme]
+   base = "light"
+   primaryColor = "#4A7A22"
+   backgroundColor = "#EEF0EC"
+   secondaryBackgroundColor = "#FFFFFF"
+   textColor = "#1E211D"
+   font = "Geist:https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap"
+   baseRadius = "large"
+   borderColor = "#E3E7E0"
+
+   [theme.sidebar]
+   backgroundColor = "#232622"
+   secondaryBackgroundColor = "#2E322D"
+   textColor = "#E4E8E1"
+   primaryColor = "#9BC53D"
+   borderColor = "#3A3F39"
+
+   [client]
+   # Hide developer-only menu items from visitors.
+   toolbarMode = "viewer"
+
+   [server]
+   headless = true
